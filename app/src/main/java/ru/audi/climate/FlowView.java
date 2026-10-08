@@ -3,22 +3,31 @@ package ru.audi.climate;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
-import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.Shader;
+import android.graphics.PathMeasure;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
 public class FlowView extends View {
 
     public interface OnPointSet { void onPointSet(int index, float xf, float yf); }
 
-    private final Paint paintFog;
+    private final Paint paintLine;
+    private final Paint paintParticle;
     private Path[] paths;
+    private PathMeasure[] measures;
+    private float[] pathLengths;
+    private final List<Particle> particles = new ArrayList<>();
+    private final Random rng = new Random();
+
     private float phase = 0f;
     private int fanSpeed = 0;
     private int direction = 2;
@@ -34,12 +43,18 @@ public class FlowView extends View {
 
     private final Runnable ticker = new Runnable() {
         @Override public void run() {
-            phase += 0.05f + fanSpeed * 0.02f;
-            if (phase > 6.2832f) phase -= 6.2832f;
+            updateParticles();
             invalidate();
-            h.postDelayed(this, 50);
+            h.postDelayed(this, 33);
         }
     };
+
+    private static class Particle {
+        int pathIndex;
+        float t;       // 0..1 вдоль пути
+        float speed;   // шаг за кадр
+        float size;
+    }
 
     public FlowView(Context c) { this(c, null); }
 
@@ -48,9 +63,14 @@ public class FlowView extends View {
         sp = c.getSharedPreferences("flow", Context.MODE_PRIVATE);
         loadPoints();
 
-        paintFog = new Paint(Paint.ANTI_ALIAS_FLAG);
-        paintFog.setStyle(Paint.Style.FILL);
-        paintFog.setColor(0xFF5CE1E6);
+        paintLine = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paintLine.setStyle(Paint.Style.STROKE);
+        paintLine.setStrokeCap(Paint.Cap.ROUND);
+        paintLine.setColor(0xFF5CE1E6);
+
+        paintParticle = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paintParticle.setStyle(Paint.Style.FILL);
+        paintParticle.setColor(0xFF6FF3FF);
     }
 
     private void loadPoints() {
@@ -70,7 +90,6 @@ public class FlowView extends View {
     }
 
     public void setListener(OnPointSet l) { this.listener = l; }
-
     public void startCalib(int which) { calibTarget = which; }
     public void stopCalib() { calibTarget = -1; savePoints(); }
 
@@ -102,6 +121,8 @@ public class FlowView extends View {
             b = (int)Math.round(255 + (90 - 255) * k);
         }
         fogColor = 0xFF000000 | (r << 16) | (g << 8) | b;
+        paintLine.setColor(fogColor);
+        paintParticle.setColor(fogColor);
         invalidate();
     }
 
@@ -137,8 +158,7 @@ public class FlowView extends View {
         int w = getWidth(), hh = getHeight();
         if (w == 0 || hh == 0) { paths = null; return; }
 
-        java.util.List<Path> list = new java.util.ArrayList<>();
-
+        List<Path> list = new ArrayList<>();
         switch (direction) {
             case 0:
                 list.add(line(xf[0]*w, yf[0]*hh, xf[4]*w, yf[4]*hh));
@@ -157,89 +177,105 @@ public class FlowView extends View {
                 list.add(line(xf[1]*w, yf[1]*hh, xf[5]*w, yf[5]*hh));
         }
         paths = list.toArray(new Path[0]);
+
+        // Готовим измерения пути для частиц
+        measures = new PathMeasure[paths.length];
+        pathLengths = new float[paths.length];
+        for (int i = 0; i < paths.length; i++) {
+            measures[i] = new PathMeasure(paths[i], false);
+            pathLengths[i] = measures[i].getLength();
+        }
+        // Сбрасываем существующие частицы
+        particles.clear();
+        spawnInitial();
     }
 
-    // Конус от старта к концу: узкий у старта, широкий у конца
     private Path line(float x1, float y1, float x2, float y2) {
-        float dx = x2 - x1;
-        float dy = y2 - y1;
-        float len = (float) Math.sqrt(dx*dx + dy*dy);
-        if (len < 1f) len = 1f;
-
-        // Перпендикуляр
-        float px = -dy / len;
-        float py =  dx / len;
-
-        // Ширина конуса у конца
-        float halfW = len * 0.28f;
-
         Path p = new Path();
         p.moveTo(x1, y1);
-        p.lineTo(x2 + px * halfW, y2 + py * halfW);
-        p.lineTo(x2 - px * halfW, y2 - py * halfW);
-        p.close();
+        p.lineTo(x2, y2);
         return p;
+    }
+
+    private void spawnInitial() {
+        if (paths == null) return;
+        for (int pi = 0; pi < paths.length; pi++) {
+            // 6 частиц на путь
+            for (int i = 0; i < 6; i++) {
+                Particle p = new Particle();
+                p.pathIndex = pi;
+                p.t = rng.nextFloat();
+                p.speed = 0.008f + rng.nextFloat() * 0.008f;
+                p.size = 4f + rng.nextFloat() * 4f;
+                particles.add(p);
+            }
+        }
+    }
+
+    private void updateParticles() {
+        if (paths == null || fanSpeed == 0) return;
+        float mult = 0.5f + fanSpeed * 0.35f;  // скорость от вентилятора
+        for (Particle p : particles) {
+            p.t += p.speed * mult;
+            if (p.t > 1f) {
+                p.t = 0f;
+                p.speed = 0.008f + rng.nextFloat() * 0.008f;
+                p.size = 4f + rng.nextFloat() * 4f;
+                p.pathIndex = rng.nextInt(paths.length);
+            }
+        }
     }
 
     @Override protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         if (paths == null || paths.length == 0 || fanSpeed == 0) return;
 
-        // Пульсация
-        float pulse = 0.82f + 0.18f * (float) Math.sin(phase);
-        float baseAlpha = (14f + fanSpeed * 12f) * pulse;
-
         int r = (fogColor >> 16) & 0xFF;
         int g = (fogColor >> 8) & 0xFF;
         int b = fogColor & 0xFF;
 
-        // 4 слоя конусов — от широкого мягкого к узкому яркому
-        float[] widths = {1.0f, 0.75f, 0.45f, 0.2f};
-        float[] alphas = {0.35f, 0.7f, 1.2f, 1.8f};
+        // 1) Мягкая "труба" — 3 слоя линий
+        int[] widths  = { 14, 7, 3 };
+        int[] alphas  = { 25, 55, 110 };
+        float vk = 0.6f + fanSpeed * 0.15f;
 
-        for (int i = 0; i < 4; i++) {
-            paintFog.setAlpha(clamp(baseAlpha * alphas[i]));
-
-            for (Path p : paths) {
-                // Строим градиент alpha от старта (прозрачно) к концу (плотно)
-                android.graphics.RectF bounds = new android.graphics.RectF();
-                p.computeBounds(bounds, true);
-
-                int aStart = (int)(paintFog.getAlpha() * 0.15f);
-                int aEnd   = paintFog.getAlpha();
-
-                int cStart = (aStart << 24) | (r << 16) | (g << 8) | b;
-                int cEnd   = (aEnd   << 24) | (r << 16) | (g << 8) | b;
-
-                LinearGradient grad = new LinearGradient(
-                    bounds.left, bounds.top,
-                    bounds.right, bounds.bottom,
-                    cStart, cEnd, Shader.TileMode.CLAMP);
-
-                paintFog.setShader(grad);
-
-                // Масштабируем конус по ширине — сужаем его к ядру
-                canvas.save();
-                if (widths[i] < 1f) {
-                    // Сжимаем поперёк оси — не нужно, оставим как есть
-                }
-                canvas.drawPath(p, paintFog);
-                canvas.restore();
-            }
-            paintFog.setShader(null);
+        for (int layer = 0; layer < 3; layer++) {
+            paintLine.setStrokeWidth(widths[layer] * vk);
+            int a = (int)(alphas[layer] * (0.8f + 0.2f * (float)Math.sin(phase)));
+            paintLine.setAlpha(Math.min(255, a));
+            for (Path p : paths) canvas.drawPath(p, paintLine);
         }
-    }
+        phase += 0.06f + fanSpeed * 0.03f;
+        if (phase > 6.2832f) phase -= 6.2832f;
 
-    private int clamp(float a) {
-        int v = (int) a;
-        if (v < 0) return 0;
-        if (v > 255) return 255;
-        return v;
+        // 2) Частицы
+        if (measures == null) return;
+
+        float[] pos = new float[2];
+        for (Particle p : particles) {
+            if (p.pathIndex >= measures.length) continue;
+            PathMeasure m = measures[p.pathIndex];
+            if (m == null) continue;
+
+            float dist = p.t * pathLengths[p.pathIndex];
+            m.getPosTan(dist, pos, null);
+
+            // Прозрачность: появляется на старте, ярко в середине, гаснет к концу
+            float fadeIn  = Math.min(1f, p.t * 4f);
+            float fadeOut = Math.min(1f, (1f - p.t) * 3f);
+            int alpha = (int)(255 * fadeIn * fadeOut * (0.5f + fanSpeed * 0.1f));
+            if (alpha > 255) alpha = 255;
+            if (alpha < 0) alpha = 0;
+
+            paintParticle.setAlpha(alpha);
+            float size = p.size * (0.8f + fanSpeed * 0.08f);
+            canvas.drawCircle(pos[0], pos[1], size, paintParticle);
+        }
     }
 
     @Override protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        h.postDelayed(ticker, 50);
+        h.postDelayed(ticker, 33);
     }
 
     @Override protected void onDetachedFromWindow() {
