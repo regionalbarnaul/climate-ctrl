@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PathMeasure;
@@ -47,8 +46,8 @@ public class FlowView extends View {
     private OnPointSet listener;
     private final SharedPreferences sp;
 
-    private static final int BLOB_SIZE = 128;   // спрайт
-    private static final int PUFFS_PER_PATH = 20; // сколько пухов вдоль линии
+    private static final int BLOB_SIZE = 128;
+    private static final int PUFFS_PER_PATH = 14;
 
     private final Runnable ticker = new Runnable() {
         @Override public void run() {
@@ -84,7 +83,6 @@ public class FlowView extends View {
         softBlob = makeSoftBlob();
     }
 
-    // Размытый мягкий шар — рисуется один раз
     private Bitmap makeSoftBlob() {
         int s = BLOB_SIZE;
         Bitmap bmp = Bitmap.createBitmap(s, s, Bitmap.Config.ARGB_8888);
@@ -92,8 +90,8 @@ public class FlowView extends View {
         Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         RadialGradient grad = new RadialGradient(
             s / 2f, s / 2f, s / 2f,
-            new int[]{ 0xFFFFFFFF, 0xAAFFFFFF, 0x00FFFFFF },
-            new float[]{ 0f, 0.35f, 1f },
+            new int[]{ 0xFFFFFFFF, 0x88FFFFFF, 0x22FFFFFF, 0x00FFFFFF },
+            new float[]{ 0f, 0.25f, 0.6f, 1f },
             Shader.TileMode.CLAMP);
         p.setShader(grad);
         c.drawCircle(s / 2f, s / 2f, s / 2f, p);
@@ -221,12 +219,12 @@ public class FlowView extends View {
     private void spawnInitial() {
         if (measures == null) return;
         for (int pi = 0; pi < measures.length; pi++) {
-            int count = 10 + fanSpeed * 4;
+            int count = 14 + fanSpeed * 5;
             for (int i = 0; i < count; i++) {
                 Particle p = new Particle();
                 p.pathIndex = pi;
                 p.t = rng.nextFloat();
-                p.speed = 0.008f + rng.nextFloat() * 0.008f;
+                p.speed = 0.010f + rng.nextFloat() * 0.010f;
                 p.size = 4f + rng.nextFloat() * 5f;
                 p.wobbleSeed = rng.nextFloat() * 6.28f;
                 particles.add(p);
@@ -236,12 +234,12 @@ public class FlowView extends View {
 
     private void updateParticles() {
         if (measures == null || fanSpeed == 0) return;
-        float mult = 0.4f + fanSpeed * 0.35f;
+        float mult = 0.5f + fanSpeed * 0.4f;
         for (Particle p : particles) {
             p.t += p.speed * mult;
             if (p.t > 1f) {
                 p.t = 0f;
-                p.speed = 0.008f + rng.nextFloat() * 0.008f;
+                p.speed = 0.010f + rng.nextFloat() * 0.010f;
                 p.size = 4f + rng.nextFloat() * 5f;
                 p.wobbleSeed = rng.nextFloat() * 6.28f;
                 if (measures.length > 0) p.pathIndex = rng.nextInt(measures.length);
@@ -253,7 +251,6 @@ public class FlowView extends View {
         super.onDraw(canvas);
         if (measures == null || measures.length == 0 || fanSpeed == 0) return;
 
-        // Красим спрайт в актуальный цвет и задаём общий уровень альфы
         paintBlob.setColorFilter(new PorterDuffColorFilter(fogColor, PorterDuff.Mode.SRC_IN));
         paintParticle.setColor(fogColor);
 
@@ -261,32 +258,31 @@ public class FlowView extends View {
         float[] pos = new float[2];
         float[] tan = new float[2];
 
-        // ========== 1) Облако из мягких пухов ==========
+        // ========== 1) Облако: широкие мягкие пуфы, разбросанные по пути ==========
         for (int pi = 0; pi < measures.length; pi++) {
             PathMeasure m = measures[pi];
             float len = pathLengths[pi];
+
             for (int i = 0; i < PUFFS_PER_PATH; i++) {
                 float t = i / (float)(PUFFS_PER_PATH - 1);
                 m.getPosTan(t * len, pos, tan);
 
-                // Покачивание поперёк — «живое» облако
-                float nx = -tan[1], ny = tan[0]; // перпендикуляр
-                float wobble = (float)Math.sin(phase * 1.7f + t * 4.5f + pi * 2.1f) * 6f;
+                float nx = -tan[1], ny = tan[0];
+                float wobble = (float)Math.sin(phase * 1.5f + t * 5f + pi * 2.1f) * 8f;
                 float px = pos[0] + nx * wobble;
                 float py = pos[1] + ny * wobble;
 
-                // Размер пуха растёт от старта к концу
-                float radius = (16f + t * 42f) * (1f + fanSpeed * 0.10f);
+                // Большой радиус — чтобы пуфы перекрывались и давали облако
+                float radius = (35f + t * 45f) * (1f + fanSpeed * 0.10f);
 
-                // Альфа: 0 у старта → пик в середине → 0 у конца
-                float a = (float)Math.sin(t * Math.PI);
-                a *= (0.35f + 0.12f * fanSpeed) * pulse;
+                // Альфа: пик у старта, плавно к нулю у конца
+                float a = (1f - t * 0.9f);
+                a *= (0.30f + 0.10f * fanSpeed) * pulse;
                 int alpha = (int)(a * 255);
-                if (alpha > 220) alpha = 220;
+                if (alpha > 180) alpha = 180;
                 if (alpha < 0) alpha = 0;
                 paintBlob.setAlpha(alpha);
 
-                // Масштаб спрайта под нужный радиус
                 float scale = radius * 2f / BLOB_SIZE;
                 matrix.reset();
                 matrix.postTranslate(-BLOB_SIZE / 2f, -BLOB_SIZE / 2f);
@@ -296,7 +292,7 @@ public class FlowView extends View {
             }
         }
 
-        // ========== 2) Летящие частицы ==========
+        // ========== 2) Частицы поверх ==========
         for (Particle p : particles) {
             if (p.pathIndex >= measures.length) continue;
             PathMeasure m = measures[p.pathIndex];
@@ -304,7 +300,7 @@ public class FlowView extends View {
             m.getPosTan(dist, pos, tan);
 
             float nx = -tan[1], ny = tan[0];
-            float wobble = (float)Math.sin(phase * 2.2f + p.wobbleSeed) * 8f;
+            float wobble = (float)Math.sin(phase * 2.2f + p.wobbleSeed) * 10f;
             float px = pos[0] + nx * wobble;
             float py = pos[1] + ny * wobble;
 
