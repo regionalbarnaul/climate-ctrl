@@ -83,9 +83,7 @@ body{background:var(--bg);font-family:system-ui,-apple-system,"Segoe UI",Roboto,
 .lite-toggle.on .bolt-fill{opacity:1}
 .lite-toggle:active{transform:scale(.92)}
 
-/* =========================================================
-   LITE РЕЖИМ — лёгкие струи без blur-фильтров
-   ========================================================= */
+/* LITE режим — лёгкие струи без blur-фильтров */
 body.lite .wind-body{display:none}
 body.lite .wind,
 body.lite .wind-core,
@@ -159,9 +157,38 @@ body.lite .wind-turb{stroke-dasharray:4 34;opacity:.5;animation-duration:2.8s}
   background:linear-gradient(180deg, rgba(92,225,230,.15), rgba(92,225,230,.03))}
 .calib-btn.danger{border-color:rgba(255,77,94,.5);color:var(--danger)}
 
-/* =========================================================
-   ПЛАНШЕТ / АВТОМАГНИТОЛА — landscape, 640–899 px
-   ========================================================= */
+/* УЛЬТРА-КОМПАКТ — landscape с малой высотой (телефон в повороте) */
+@media (orientation: landscape) and (max-height: 440px) {
+  body{padding:4px}
+  .panel{max-width:100%;max-height:100vh;height:100%;padding:6px;gap:4px;border-radius:12px;
+    display:grid;grid-template-columns:minmax(200px,32%) 1fr;
+    grid-template-rows:auto auto auto auto auto;
+    grid-template-areas:"temp center" "dir center" "fan center" "conn center" "stat center";
+    align-content:stretch}
+  .temp-block{grid-area:temp;padding:4px 6px;gap:1px;border-radius:12px}
+  .dir-grid{grid-area:dir;gap:4px}
+  .fan-block{grid-area:fan;padding:3px 6px;gap:6px;border-radius:12px}
+  .connect-btn{grid-area:conn;height:32px;font-size:10px;letter-spacing:2px;border-radius:10px}
+  .status{grid-area:stat;font-size:9px;padding:0}
+  .center{grid-area:center;min-height:0;height:100%;border-radius:12px}
+  .audi-label{font-size:8px;letter-spacing:6px;padding-left:6px}
+  .audi-rings{width:36px;height:10px;margin-bottom:1px}
+  .temp-square{min-width:80px;height:38px;padding:0 8px;border-radius:8px}
+  .temp-value{font-size:20px}.temp-value sup{font-size:9px}
+  .temp-slider{height:4px;margin-top:2px;width:calc(100% - 12px);margin-left:6px;margin-right:6px}
+  .temp-slider::-webkit-slider-thumb{width:16px;height:16px;border-width:2px}
+  .temp-labels{font-size:8px;width:calc(100% - 12px);margin:0 6px}
+  .dir-btn{height:38px;border-radius:10px}.dir-btn svg{width:20px;height:20px}
+  .fan-btn{width:30px;height:30px}
+  .fan-small svg{width:18px;height:18px}.fan-big svg{width:26px;height:26px}
+  .fan-value{font-size:14px;min-height:14px}
+  .fan-label{min-height:20px}.fan-label svg{width:20px;height:20px}
+  .fan-seg{height:3px}
+  .lite-toggle{width:30px;height:30px;top:4px;right:4px}
+  .lite-toggle svg{width:14px;height:14px}
+}
+
+/* ПЛАНШЕТ / АВТОМАГНИТОЛА — landscape, 640–899 px */
 @media (orientation: landscape) and (min-width: 640px) and (max-width: 899px) {
   body{padding:8px}
   .panel{max-width:100%;max-height:100vh;height:100%;padding:12px;gap:8px;border-radius:16px;
@@ -190,9 +217,7 @@ body.lite .wind-turb{stroke-dasharray:4 34;opacity:.5;animation-duration:2.8s}
   .fan-seg{height:5px}
 }
 
-/* =========================================================
-   ДЕСКТОП / БОЛЬШОЙ ПЛАНШЕТ — landscape, 900+, низкий
-   ========================================================= */
+/* ДЕСКТОП / БОЛЬШОЙ ПЛАНШЕТ — landscape, 900+, низкий */
 @media (min-width: 900px) and (max-height: 780px) {
   body{padding:6px}
   .panel{max-width:100%;max-height:100vh;height:100%;padding:10px;gap:8px;
@@ -208,8 +233,7 @@ body.lite .wind-turb{stroke-dasharray:4 34;opacity:.5;animation-duration:2.8s}
   .audi-label{font-size:11px;letter-spacing:10px;padding-left:10px}
   .audi-rings{width:60px;height:18px;margin-bottom:4px}
   .temp-square{min-width:120px;height:64px}
-  .temp-value{font-size:32px}
-  .temp-value sup{font-size:13px}
+  .temp-value{font-size:32px}.temp-value sup{font-size:13px}
   .dir-btn{height:56px}.dir-btn svg{width:30px;height:30px}
   .fan-btn{width:48px;height:48px}
   .fan-small svg{width:26px;height:26px}.fan-big svg{width:38px;height:38px}
@@ -217,9 +241,7 @@ body.lite .wind-turb{stroke-dasharray:4 34;opacity:.5;animation-duration:2.8s}
   .fan-label{min-height:28px}.fan-label svg{width:28px;height:28px}
 }
 
-/* =========================================================
-   БОЛЬШОЙ ДЕСКТОП — landscape, 900+, высокий
-   ========================================================= */
+/* БОЛЬШОЙ ДЕСКТОП — landscape, 900+, высокий */
 @media (min-width: 900px) and (min-height: 781px) {
   body{padding:14px}
   .panel{max-width:100%;max-height:100vh;height:100%;padding:18px;gap:12px;
@@ -235,8 +257,7 @@ body.lite .wind-turb{stroke-dasharray:4 34;opacity:.5;animation-duration:2.8s}
   .audi-label{font-size:14px;letter-spacing:14px;padding-left:14px}
   .audi-rings{width:90px;height:28px;margin-bottom:10px}
   .temp-square{min-width:180px;height:110px;border-radius:18px}
-  .temp-value{font-size:46px}
-  .temp-value sup{font-size:20px}
+  .temp-value{font-size:46px}.temp-value sup{font-size:20px}
   .temp-slider{height:8px}
   .temp-slider::-webkit-slider-thumb{width:30px;height:30px}
   .temp-labels{font-size:14px}
@@ -436,19 +457,28 @@ body.lite .wind-turb{stroke-dasharray:4 34;opacity:.5;animation-duration:2.8s}
 </div>
 
 <script>
+window.onerror = function(msg, url, line){
+  try {
+    var s = document.getElementById('status');
+    if (s) { s.textContent = 'ERR стр.' + line + ': ' + msg; s.style.color = '#ff4d5e'; }
+  } catch(e) {}
+  return false;
+};
+
 const $=id=>document.getElementById(id);
 const S={temp:20.0,fan:0,dir:2};
+
+try {
+  const saved = JSON.parse(localStorage.getItem('climate') || 'null');
+  if (saved && typeof saved.temp === 'number') Object.assign(S, saved);
+} catch(e) {}
+
 let isAPK = false;
 (function waitBridge(n){
   if (typeof window.AndroidSerial !== 'undefined') { isAPK = true; return; }
   if (n <= 0) return;
   setTimeout(function(){ waitBridge(n-1); }, 100);
 })(30);
-
-try {
-  const saved = JSON.parse(localStorage.getItem('climate') || 'null');
-  if (saved && typeof saved.temp === 'number') Object.assign(S, saved);
-} catch(e) {}
 
 const FAN_ICON = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 12 Q13.8 6.5 13.5 2.5 Q15.5 4.5 15.5 8.5 Q15.5 11 13 12.6 Z" fill="currentColor"/><path d="M12 12 Q13.8 6.5 13.5 2.5 Q15.5 4.5 15.5 8.5 Q15.5 11 13 12.6 Z" fill="currentColor" transform="rotate(90 12 12)"/><path d="M12 12 Q13.8 6.5 13.5 2.5 Q15.5 4.5 15.5 8.5 Q15.5 11 13 12.6 Z" fill="currentColor" transform="rotate(180 12 12)"/><path d="M12 12 Q13.8 6.5 13.5 2.5 Q15.5 4.5 15.5 8.5 Q15.5 11 13 12.6 Z" fill="currentColor" transform="rotate(270 12 12)"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>';
 const FAN_OFF  = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 12 Q13.8 6.5 13.5 2.5 Q15.5 4.5 15.5 8.5 Q15.5 11 13 12.6 Z" fill="currentColor"/><path d="M12 12 Q13.8 6.5 13.5 2.5 Q15.5 4.5 15.5 8.5 Q15.5 11 13 12.6 Z" fill="currentColor" transform="rotate(90 12 12)"/><path d="M12 12 Q13.8 6.5 13.5 2.5 Q15.5 4.5 15.5 8.5 Q15.5 11 13 12.6 Z" fill="currentColor" transform="rotate(180 12 12)"/><path d="M12 12 Q13.8 6.5 13.5 2.5 Q15.5 4.5 15.5 8.5 Q15.5 11 13 12.6 Z" fill="currentColor" transform="rotate(270 12 12)"/><circle cx="12" cy="12" r="2" fill="currentColor"/><line x1="2.5" y1="2.5" x2="21.5" y2="21.5" stroke="#ff4d5e" stroke-width="2.6" stroke-linecap="round"/></svg>';
@@ -716,7 +746,6 @@ updateDirVisual();
 applyDirRotation();
 renderFan();
 
-/* картинка салона теперь внутри SVG — общие координаты со струями */
 (function(){
   var el = document.getElementById('carImage');
   if(!el) return;
@@ -726,7 +755,6 @@ renderFan();
   if(url) el.setAttribute('href', url);
 })();
 
-/* LITE режим: уважаем ручной выбор, иначе авто (landscape < 900px) */
 (function(){
   var saved = null;
   try { saved = localStorage.getItem('climate.lite'); } catch(e) {}
@@ -755,21 +783,21 @@ window.toggleLite = function(){
   }, 1200);
 };
 
-/* ручные тумблеры из консоли */
 window.liteOn  = function(){ if(!document.body.classList.contains('lite')) toggleLite(); };
 window.liteOff = function(){ if(document.body.classList.contains('lite')) toggleLite(); };
-window.liteAuto = function(){ try{ localStorage.removeItem('climate.lite'); }catch(e){} location.reload(); }
-  /* --- кнопка "Подключить / Отключить" --- */
+window.liteAuto = function(){ try{ localStorage.removeItem('climate.lite'); }catch(e){} location.reload(); };
+
 $('connectBtn').addEventListener('click', function(){
   if (isConnected) disconnect();
   else connect();
-}); 
-  setTimeout(function(){
+});
+
+setTimeout(function(){
   if (isAPK) {
     setStatus('Мост OK, USB не подключён', true);
   } else {
     setStatus('Мост НЕ найден — смотри тосты', false);
-  
+  }
 }, 6000);
 </script>
 </body>
