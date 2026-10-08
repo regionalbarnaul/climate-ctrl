@@ -1,15 +1,35 @@
 package ru.audi.climate;
 
 import android.app.Activity;
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.hardware.usb.UsbDeviceConnection;
+import android.hardware.usb.UsbManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import com.hoho.android.usbserial.driver.UsbSerialDriver;
+import com.hoho.android.usbserial.driver.UsbSerialPort;
+import com.hoho.android.usbserial.driver.UsbSerialProber;
+import com.hoho.android.usbserial.util.SerialInputOutputManager;
+
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 public class MainActivity extends Activity {
 
+    // ==== UI ====
     private TextView tempValue;
     private SeekBar tempSlider;
     private TextView fanValue;
@@ -19,7 +39,7 @@ public class MainActivity extends Activity {
     private TextView statusText;
     private FlowView flowView;
     private LinearLayout calibBar;
-    private Button[] calibBtns;   // 8 штук: старты 0..3, концы 4..7
+    private Button[] calibBtns;
     private Button calReset, calDone;
 
     private double temp = 20.0;
@@ -32,9 +52,27 @@ public class MainActivity extends Activity {
     private static final int COLOR_TEXT      = 0xFFFFFFFF;
     private static final int COLOR_SEG_OFF   = 0xFF1E2A3D;
 
-    private static final String[] CAL_NAMES = {
-        "Ст. стекло", "Ст. лицо", "Ст. ноги", "Ст. стек+ног",
-        "Кн. стекло", "Кн. лицо", "Кн. ноги", "Кн. стек+ног"
+    // ==== USB ====
+    private static final String ACTION_USB_PERM = "ru.audi.climate.USB_PERMISSION";
+    private UsbManager usbManager;
+    private UsbSerialPort usbPort;
+    private SerialInputOutputManager usbIoManager;
+    private final ExecutorService usbExecutor = Executors.newSingleThreadExecutor();
+    private boolean usbConnected = false;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+
+    private final BroadcastReceiver permReceiver = new BroadcastReceiver() {
+        @Override public void onReceive(Context ctx, Intent intent) {
+            if (!ACTION_USB_PERM.equals(intent.getAction())) return;
+            boolean granted = intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false);
+            if (granted) {
+                usbExecutor.execute(new Runnable() {
+                    @Override public void run() { openPort(); }
+                });
+            } else {
+                setStatusMain("Доступ к USB отклонён");
+            }
+        }
     };
 
     @Override
@@ -42,6 +80,7 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // ---- UI инициализация ----
         tempValue   = findViewById(R.id.tempValue);
         tempSlider  = findViewById(R.id.tempSlider);
         fanValue    = findViewById(R.id.fanValue);
@@ -113,7 +152,10 @@ public class MainActivity extends Activity {
                 tempValue.setText(String.format("%.1f°C", temp));
             }
             @Override public void onStartTrackingTouch(SeekBar sb) {}
-            @Override public void onStopTrackingTouch(SeekBar sb) {}
+            @Override public void onStopTrackingTouch(SeekBar sb) {
+                int angle = (int)Math.round(((temp - 16) / 14) * 180);
+                usbSend("A" + angle);
+            }
         });
 
         for (int i = 0; i < dirButtons.length; i++) {
@@ -132,21 +174,23 @@ public class MainActivity extends Activity {
 
         connectBtn.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
-                statusText.setText("USB пока не подключён");
+                if (usbConnected) usbDisconnect();
+                else usbConnect();
             }
         });
 
+        // ---- калибровка ----
         gear.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
                 if (calibBar.getVisibility() == View.VISIBLE) {
                     flowView.stopCalib();
                     calibBar.setVisibility(View.GONE);
-                    statusText.setText("Точки сохранены");
+                    setStatusMain("Точки сохранены");
                 } else {
                     calibBar.setVisibility(View.VISIBLE);
                     flowView.startCalib(0);
                     highlightCalibBtn(0);
-                    statusText.setText("Тапни по салону: " + CAL_NAMES[0]);
+                    setStatusMain("Тапни по салону: старт стекло");
                 }
             }
         });
@@ -157,42 +201,173 @@ public class MainActivity extends Activity {
                 @Override public void onClick(View v) {
                     flowView.startCalib(idx);
                     highlightCalibBtn(idx);
-                    statusText.setText("Тапни по салону: " + CAL_NAMES[idx]);
                 }
             });
         }
-
         calReset.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
                 flowView.resetPoints();
-                statusText.setText("Точки сброшены");
+                setStatusMain("Точки сброшены");
             }
         });
-
         calDone.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
                 flowView.stopCalib();
                 calibBar.setVisibility(View.GONE);
-                statusText.setText("Готово, точки сохранены");
+                setStatusMain("Готово, точки сохранены");
             }
         });
 
         flowView.setListener(new FlowView.OnPointSet() {
             @Override public void onPointSet(int index, float xf, float yf) {
-                String n = (index >= 0 && index < CAL_NAMES.length) ? CAL_NAMES[index] : "?";
-                statusText.setText(String.format("%s: x=%.2f y=%.2f", n, xf, yf));
+                setStatusMain(String.format("точка %d: x=%.2f y=%.2f", index+1, xf, yf));
             }
         });
 
         renderFan();
         updateDirVisual();
         tempValue.setText(String.format("%.1f°C", temp));
-
         if (flowView != null) {
             flowView.setFan(fan);
             flowView.setDirection(dir);
         }
+
+        // ---- USB ----
+        usbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
+        IntentFilter f = new IntentFilter(ACTION_USB_PERM);
+        if (Build.VERSION.SDK_INT >= 33)
+            registerReceiver(permReceiver, f, Context.RECEIVER_NOT_EXPORTED);
+        else
+            registerReceiver(permReceiver, f);
+
+        setStatusMain("USB не подключён");
     }
+
+    @Override protected void onDestroy() {
+        try { unregisterReceiver(permReceiver); } catch (Exception ignored) {}
+        usbExecutor.execute(new Runnable() {
+            @Override public void run() { closePort(); }
+        });
+        usbExecutor.shutdown();
+        super.onDestroy();
+    }
+
+    // ================= USB =================
+
+    private void usbConnect() {
+        if (usbManager == null) { setStatusMain("USB сервис недоступен"); return; }
+        List<UsbSerialDriver> drivers =
+            UsbSerialProber.getDefaultProber().findAllDrivers(usbManager);
+        if (drivers.isEmpty()) {
+            setStatusMain("CH340 не найден");
+            return;
+        }
+        UsbSerialDriver d = drivers.get(0);
+        if (usbManager.hasPermission(d.getDevice())) {
+            usbExecutor.execute(new Runnable() {
+                @Override public void run() { openPort(); }
+            });
+        } else {
+            int flag = Build.VERSION.SDK_INT >= 31 ? PendingIntent.FLAG_MUTABLE : 0;
+            usbManager.requestPermission(d.getDevice(),
+                PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERM), flag));
+            setStatusMain("Запрос доступа...");
+        }
+    }
+
+    private void usbDisconnect() {
+        usbExecutor.execute(new Runnable() {
+            @Override public void run() { closePort(); }
+        });
+    }
+
+    private void openPort() {
+        List<UsbSerialDriver> drivers =
+            UsbSerialProber.getDefaultProber().findAllDrivers(usbManager);
+        if (drivers.isEmpty()) { setStatusMain("CH340 не найден"); return; }
+        UsbSerialDriver d = drivers.get(0);
+        UsbDeviceConnection conn = usbManager.openDevice(d.getDevice());
+        if (conn == null) { setStatusMain("Не удалось открыть порт"); return; }
+        final UsbSerialPort p = d.getPorts().get(0);
+        try {
+            p.open(conn);
+            p.setParameters(115200, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
+            usbPort = p;
+            usbIoManager = new SerialInputOutputManager(p,
+                new SerialInputOutputManager.Listener() {
+                    @Override public void onNewData(byte[] data) {
+                        final String s = new String(data).trim();
+                        if (!s.isEmpty()) mainHandler.post(new Runnable() {
+                            @Override public void run() { onUsbLine(s); }
+                        });
+                    }
+                    @Override public void onRunError(Exception e) { /* игнор */ }
+                });
+            usbExecutor.submit(usbIoManager);
+
+            mainHandler.post(new Runnable() {
+                @Override public void run() {
+                    usbConnected = true;
+                    updateConnectButton();
+                    setStatusMain("✓ Подключено");
+                    // синхронизация состояния
+                    usbSend("V" + fan);
+                    usbSend(String.valueOf(dir + 1));
+                    usbSend("A" + (int)Math.round(((temp - 16) / 14) * 180));
+                }
+            });
+        } catch (Exception e) {
+            setStatusMain("Ошибка порта: " + e.getMessage());
+        }
+    }
+
+    private void closePort() {
+        try { if (usbIoManager != null) usbIoManager.stop(); } catch (Exception ignored) {}
+        usbIoManager = null;
+        try { if (usbPort != null) usbPort.close(); } catch (Exception ignored) {}
+        usbPort = null;
+        mainHandler.post(new Runnable() {
+            @Override public void run() {
+                usbConnected = false;
+                updateConnectButton();
+                setStatusMain("USB отключён");
+            }
+        });
+    }
+
+    private void usbSend(final String cmd) {
+        if (!usbConnected || usbPort == null) return;
+        usbExecutor.execute(new Runnable() {
+            @Override public void run() {
+                try { usbPort.write((cmd + "\n").getBytes(), 1000); }
+                catch (Exception ignored) {}
+            }
+        });
+    }
+
+    // Сюда приходят строки от Arduino
+    private void onUsbLine(String line) {
+        // Можно распарсить статус от платы. Пока просто игнор.
+        // Например, если Arduino шлёт "TEMP=23.5" — можно показывать.
+    }
+
+    private void setStatusMain(final String t) {
+        mainHandler.post(new Runnable() {
+            @Override public void run() { statusText.setText(t); }
+        });
+    }
+
+    private void updateConnectButton() {
+        if (usbConnected) {
+            connectBtn.setText("ОТКЛЮЧИТЬ");
+            connectBtn.setTextColor(0xFFFF8888);
+        } else {
+            connectBtn.setText("ПОДКЛЮЧИТЬ");
+            connectBtn.setTextColor(COLOR_ACCENT);
+        }
+    }
+
+    // ================= UI helpers =================
 
     private void highlightCalibBtn(int idx) {
         for (int j = 0; j < calibBtns.length; j++) {
@@ -205,6 +380,7 @@ public class MainActivity extends Activity {
         dir = n;
         updateDirVisual();
         if (flowView != null) flowView.setDirection(dir);
+        usbSend(String.valueOf(dir + 1));
     }
 
     private void updateDirVisual() {
@@ -224,6 +400,7 @@ public class MainActivity extends Activity {
         fan = Math.max(0, Math.min(5, fan + delta));
         renderFan();
         if (flowView != null) flowView.setFan(fan);
+        usbSend("V" + fan);
     }
 
     private void renderFan() {
