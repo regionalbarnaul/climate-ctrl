@@ -30,16 +30,18 @@ jobs:
             fi
           done
 
-          echo "=== jitpack hits ==="
-          grep -r "jitpack.io" android --include="*.gradle" || echo "НЕ НАЙДЕНО!"
-
           GRAD=android/app/build.gradle
           if ! grep -q "usb-serial-for-android" $GRAD; then
             sed -i '/dependencies {/a\    implementation "com.github.mik3y:usb-serial-for-android:3.7.0"' $GRAD
           fi
 
-          mkdir -p android/app/src/main/java/ru/audi/climate
-          cp android-extra/MainActivity.kt android/app/src/main/java/ru/audi/climate/MainActivity.kt
+          APP_DIR=android/app/src/main/java/ru/audi/climate
+          mkdir -p $APP_DIR
+          rm -f $APP_DIR/MainActivity.java
+          rm -f $APP_DIR/MainActivity.kt
+          cp android-extra/MainActivity.java $APP_DIR/MainActivity.java
+          echo "=== files in $APP_DIR ==="
+          ls -la $APP_DIR/
 
       - run: cd android && chmod +x gradlew && ./gradlew assembleDebug
 
