@@ -438,7 +438,8 @@ body.lite .wind-turb{stroke-dasharray:4 34;opacity:.5;animation-duration:2.8s}
 <script>
 const $=id=>document.getElementById(id);
 const S={temp:20.0,fan:0,dir:2};
-const isAPK = typeof window.AndroidSerial !== 'undefined';
+let isAPK = typeof window.AndroidSerial !== 'undefined';
+window.addEventListener('androidserial-ready', () => { isAPK = true; });
 
 try {
   const saved = JSON.parse(localStorage.getItem('climate') || 'null');
