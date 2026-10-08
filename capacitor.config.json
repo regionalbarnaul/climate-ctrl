@@ -1,0 +1,6 @@
+{
+  "appId": "ru.audi.climate",
+  "appName": "Климат",
+  "webDir": "www",
+  "android": { "allowMixedContent": true }
+}
