@@ -3,8 +3,10 @@ package ru.audi.climate;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
+import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Shader;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.AttributeSet;
@@ -23,7 +25,6 @@ public class FlowView extends View {
     private int fogColor = 0xFF5CE1E6;
     private final Handler h = new Handler(Looper.getMainLooper());
 
-    // 0..3 — старты для 4 направлений, 4..7 — концы
     private float[] xf = {0.38f, 0.38f, 0.38f, 0.38f,   0.47f, 0.61f, 0.42f, 0.47f};
     private float[] yf = {0.42f, 0.42f, 0.42f, 0.42f,   0.27f, 0.34f, 0.72f, 0.72f};
 
@@ -33,7 +34,7 @@ public class FlowView extends View {
 
     private final Runnable ticker = new Runnable() {
         @Override public void run() {
-            phase += 0.04f + fanSpeed * 0.015f;
+            phase += 0.05f + fanSpeed * 0.02f;
             if (phase > 6.2832f) phase -= 6.2832f;
             invalidate();
             h.postDelayed(this, 50);
@@ -48,9 +49,7 @@ public class FlowView extends View {
         loadPoints();
 
         paintFog = new Paint(Paint.ANTI_ALIAS_FLAG);
-        paintFog.setStyle(Paint.Style.STROKE);
-        paintFog.setStrokeCap(Paint.Cap.ROUND);
-        paintFog.setStrokeJoin(Paint.Join.ROUND);
+        paintFog.setStyle(Paint.Style.FILL);
         paintFog.setColor(0xFF5CE1E6);
     }
 
@@ -145,7 +144,6 @@ public class FlowView extends View {
                 list.add(line(xf[0]*w, yf[0]*hh, xf[4]*w, yf[4]*hh));
                 break;
             case 1:
-                // стек+ноги — включаем обе готовые линии
                 list.add(line(xf[0]*w, yf[0]*hh, xf[4]*w, yf[4]*hh));
                 list.add(line(xf[2]*w, yf[2]*hh, xf[6]*w, yf[6]*hh));
                 break;
@@ -161,10 +159,25 @@ public class FlowView extends View {
         paths = list.toArray(new Path[0]);
     }
 
+    // Конус от старта к концу: узкий у старта, широкий у конца
     private Path line(float x1, float y1, float x2, float y2) {
+        float dx = x2 - x1;
+        float dy = y2 - y1;
+        float len = (float) Math.sqrt(dx*dx + dy*dy);
+        if (len < 1f) len = 1f;
+
+        // Перпендикуляр
+        float px = -dy / len;
+        float py =  dx / len;
+
+        // Ширина конуса у конца
+        float halfW = len * 0.28f;
+
         Path p = new Path();
         p.moveTo(x1, y1);
-        p.lineTo(x2, y2);
+        p.lineTo(x2 + px * halfW, y2 + py * halfW);
+        p.lineTo(x2 - px * halfW, y2 - py * halfW);
+        p.close();
         return p;
     }
 
@@ -172,26 +185,49 @@ public class FlowView extends View {
         super.onDraw(canvas);
         if (paths == null || paths.length == 0 || fanSpeed == 0) return;
 
-        paintFog.setColor(fogColor);
+        // Пульсация
+        float pulse = 0.82f + 0.18f * (float) Math.sin(phase);
+        float baseAlpha = (14f + fanSpeed * 12f) * pulse;
 
-        float pulse = 0.78f + 0.22f * (float) Math.sin(phase);
-        float baseAlpha = (12f + fanSpeed * 10f) * pulse;
+        int r = (fogColor >> 16) & 0xFF;
+        int g = (fogColor >> 8) & 0xFF;
+        int b = fogColor & 0xFF;
 
-        paintFog.setStrokeWidth(90f);
-        paintFog.setAlpha(clamp(baseAlpha * 0.45f));
-        for (Path p : paths) canvas.drawPath(p, paintFog);
+        // 4 слоя конусов — от широкого мягкого к узкому яркому
+        float[] widths = {1.0f, 0.75f, 0.45f, 0.2f};
+        float[] alphas = {0.35f, 0.7f, 1.2f, 1.8f};
 
-        paintFog.setStrokeWidth(52f);
-        paintFog.setAlpha(clamp(baseAlpha * 0.85f));
-        for (Path p : paths) canvas.drawPath(p, paintFog);
+        for (int i = 0; i < 4; i++) {
+            paintFog.setAlpha(clamp(baseAlpha * alphas[i]));
 
-        paintFog.setStrokeWidth(26f);
-        paintFog.setAlpha(clamp(baseAlpha * 1.4f));
-        for (Path p : paths) canvas.drawPath(p, paintFog);
+            for (Path p : paths) {
+                // Строим градиент alpha от старта (прозрачно) к концу (плотно)
+                android.graphics.RectF bounds = new android.graphics.RectF();
+                p.computeBounds(bounds, true);
 
-        paintFog.setStrokeWidth(8f);
-        paintFog.setAlpha(clamp(baseAlpha * 2.1f));
-        for (Path p : paths) canvas.drawPath(p, paintFog);
+                int aStart = (int)(paintFog.getAlpha() * 0.15f);
+                int aEnd   = paintFog.getAlpha();
+
+                int cStart = (aStart << 24) | (r << 16) | (g << 8) | b;
+                int cEnd   = (aEnd   << 24) | (r << 16) | (g << 8) | b;
+
+                LinearGradient grad = new LinearGradient(
+                    bounds.left, bounds.top,
+                    bounds.right, bounds.bottom,
+                    cStart, cEnd, Shader.TileMode.CLAMP);
+
+                paintFog.setShader(grad);
+
+                // Масштабируем конус по ширине — сужаем его к ядру
+                canvas.save();
+                if (widths[i] < 1f) {
+                    // Сжимаем поперёк оси — не нужно, оставим как есть
+                }
+                canvas.drawPath(p, paintFog);
+                canvas.restore();
+            }
+            paintFog.setShader(null);
+        }
     }
 
     private int clamp(float a) {
