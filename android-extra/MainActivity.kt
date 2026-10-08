@@ -10,8 +10,12 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
+import android.view.View
+import android.view.ViewGroup
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
+import android.widget.Toast
 import com.getcapacitor.BridgeActivity
 import com.hoho.android.usbserial.driver.UsbSerialPort
 import com.hoho.android.usbserial.driver.UsbSerialProber
@@ -20,6 +24,7 @@ import java.util.concurrent.Executors
 
 class MainActivity : BridgeActivity() {
 
+    private val TAG = "Climate"
     private var usbManager: UsbManager? = null
     private var port: UsbSerialPort? = null
     private var ioManager: SerialInputOutputManager? = null
@@ -29,7 +34,7 @@ class MainActivity : BridgeActivity() {
 
     private val handler = Handler(Looper.getMainLooper())
     private var attempts = 0
-    private val maxAttempts = 60
+    private val maxAttempts = 100
 
     private val ACTION = "ru.audi.climate.USB_PERMISSION"
 
@@ -44,6 +49,8 @@ class MainActivity : BridgeActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Log.i(TAG, "onCreate")
+        toast("onCreate")
         usbManager = getSystemService(Context.USB_SERVICE) as UsbManager
         val f = IntentFilter(ACTION)
         if (Build.VERSION.SDK_INT >= 33)
@@ -54,6 +61,12 @@ class MainActivity : BridgeActivity() {
 
     override fun onResume() {
         super.onResume()
+        Log.i(TAG, "onResume")
+        scheduleAttach()
+    }
+
+    override fun onPostResume() {
+        super.onPostResume()
         scheduleAttach()
     }
 
@@ -70,13 +83,15 @@ class MainActivity : BridgeActivity() {
             try {
                 wv.addJavascriptInterface(UsbBridge(), "AndroidSerial")
                 bridgeAttached = true
+                Log.i(TAG, "AndroidSerial attached on attempt $attempts")
+                toast("Мост прицеплен")
                 wv.post {
                     wv.evaluateJavascript(
                         "window.dispatchEvent(new Event('androidserial-ready'))", null)
                 }
-                android.util.Log.i("Climate", "AndroidSerial bridge attached")
             } catch (e: Throwable) {
-                android.util.Log.e("Climate", "attach failed: ${e.message}")
+                Log.e(TAG, "attach failed: ${e.message}", e)
+                toast("err: ${e.message}")
             }
             return
         }
@@ -84,21 +99,41 @@ class MainActivity : BridgeActivity() {
         if (attempts < maxAttempts) {
             handler.postDelayed({ tryAttach() }, 100)
         } else {
-            android.util.Log.e("Climate", "bridge.webView never appeared")
+            Log.e(TAG, "WebView never found in $maxAttempts attempts")
+            toast("WebView не найден")
         }
     }
 
     private fun grabWebView(): WebView? {
         try {
-            val b = bridge ?: return null
-            val wv = b.webView ?: return null
-            return wv
+            val b = getBridge()
+            if (b != null) {
+                val wv = b.webView
+                if (wv != null) return wv
+            }
         } catch (_: Throwable) {}
         try {
-            val wv2 = getBridge()?.webView
-            if (wv2 != null) return wv2
+            val decor: View? = window?.decorView
+            val found = findWebView(decor)
+            if (found != null) return found
         } catch (_: Throwable) {}
         return null
+    }
+
+    private fun findWebView(v: View?): WebView? {
+        if (v == null) return null
+        if (v is WebView) return v
+        if (v is ViewGroup) {
+            for (i in 0 until v.childCount) {
+                val r = findWebView(v.getChildAt(i))
+                if (r != null) return r
+            }
+        }
+        return null
+    }
+
+    private fun toast(msg: String) {
+        try { Toast.makeText(this, msg, Toast.LENGTH_SHORT).show() } catch (_: Throwable) {}
     }
 
     override fun onDestroy() {
