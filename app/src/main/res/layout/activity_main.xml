@@ -62,16 +62,26 @@
         </LinearLayout>
     </LinearLayout>
 
-    <ImageView
-        android:id="@+id/carImage"
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:layout_marginTop="8dp"
-        android:background="#05080C"
-        android:scaleType="centerCrop"
-        android:src="@drawable/car"
-        android:contentDescription="Салон"/>
+        android:background="#05080C">
+
+        <ImageView
+            android:id="@+id/carImage"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:src="@drawable/car"
+            android:contentDescription="Салон"/>
+
+        <ru.audi.climate.FlowView
+            android:id="@+id/flowView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+    </FrameLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
