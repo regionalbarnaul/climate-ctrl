@@ -81,6 +81,18 @@
             android:id="@+id/flowView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"/>
+
+        <Button
+            android:id="@+id/btnGear"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:layout_gravity="top|end"
+            android:layout_margin="8dp"
+            android:text="⚙"
+            android:textSize="24sp"
+            android:textColor="#5CE1E6"
+            android:padding="0dp"
+            android:background="#99000000"/>
     </FrameLayout>
 
     <LinearLayout
@@ -92,38 +104,27 @@
 
         <Button
             android:id="@+id/btnDir0"
-            android:layout_width="0dp"
-            android:layout_height="64dp"
-            android:layout_weight="1"
-            android:layout_marginEnd="4dp"
-            android:text="Стекло"
-            android:textSize="12sp"/>
+            android:layout_width="0dp" android:layout_height="64dp"
+            android:layout_weight="1" android:layout_marginEnd="4dp"
+            android:text="Стекло" android:textSize="12sp"/>
 
         <Button
             android:id="@+id/btnDir1"
-            android:layout_width="0dp"
-            android:layout_height="64dp"
-            android:layout_weight="1"
-            android:layout_marginEnd="4dp"
-            android:text="Стек.+ноги"
-            android:textSize="11sp"/>
+            android:layout_width="0dp" android:layout_height="64dp"
+            android:layout_weight="1" android:layout_marginEnd="4dp"
+            android:text="Стек.+ноги" android:textSize="11sp"/>
 
         <Button
             android:id="@+id/btnDir2"
-            android:layout_width="0dp"
-            android:layout_height="64dp"
-            android:layout_weight="1"
-            android:layout_marginEnd="4dp"
-            android:text="Лицо"
-            android:textSize="12sp"/>
+            android:layout_width="0dp" android:layout_height="64dp"
+            android:layout_weight="1" android:layout_marginEnd="4dp"
+            android:text="Лицо" android:textSize="12sp"/>
 
         <Button
             android:id="@+id/btnDir3"
-            android:layout_width="0dp"
-            android:layout_height="64dp"
+            android:layout_width="0dp" android:layout_height="64dp"
             android:layout_weight="1"
-            android:text="Ноги"
-            android:textSize="12sp"/>
+            android:text="Ноги" android:textSize="12sp"/>
     </LinearLayout>
 
     <LinearLayout
@@ -137,34 +138,23 @@
 
         <Button
             android:id="@+id/btnFanMinus"
-            android:layout_width="52dp"
-            android:layout_height="52dp"
-            android:text="−"
-            android:textSize="22sp"
-            android:padding="0dp"/>
+            android:layout_width="52dp" android:layout_height="52dp"
+            android:text="−" android:textSize="22sp" android:padding="0dp"/>
 
         <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
+            android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:orientation="vertical"
             android:gravity="center"
-            android:paddingStart="10dp"
-            android:paddingEnd="10dp">
+            android:paddingStart="10dp" android:paddingEnd="10dp">
 
             <TextView
                 android:id="@+id/fanValue"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="0"
-                android:textColor="#FFFFFF"
-                android:textSize="24sp"/>
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="0" android:textColor="#FFFFFF" android:textSize="24sp"/>
 
             <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:orientation="horizontal">
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="6dp" android:orientation="horizontal">
                 <View android:id="@+id/seg0" android:layout_width="0dp" android:layout_height="5dp" android:layout_weight="1" android:layout_marginEnd="3dp" android:background="#1E2A3D"/>
                 <View android:id="@+id/seg1" android:layout_width="0dp" android:layout_height="5dp" android:layout_weight="1" android:layout_marginEnd="3dp" android:background="#1E2A3D"/>
                 <View android:id="@+id/seg2" android:layout_width="0dp" android:layout_height="5dp" android:layout_weight="1" android:layout_marginEnd="3dp" android:background="#1E2A3D"/>
@@ -175,28 +165,72 @@
 
         <Button
             android:id="@+id/btnFanPlus"
-            android:layout_width="52dp"
-            android:layout_height="52dp"
-            android:text="+"
-            android:textSize="22sp"
-            android:padding="0dp"/>
+            android:layout_width="52dp" android:layout_height="52dp"
+            android:text="+" android:textSize="22sp" android:padding="0dp"/>
     </LinearLayout>
 
     <Button
         android:id="@+id/connectBtn"
-        android:layout_width="match_parent"
-        android:layout_height="52dp"
+        android:layout_width="match_parent" android:layout_height="52dp"
         android:layout_marginTop="8dp"
-        android:text="ПОДКЛЮЧИТЬ"
-        android:textSize="13sp"/>
+        android:text="ПОДКЛЮЧИТЬ" android:textSize="13sp"/>
 
     <TextView
         android:id="@+id/statusText"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginTop="4dp" android:gravity="center"
+        android:text="USB не подключён"
+        android:textColor="#80FFFFFF" android:textSize="11sp"/>
+
+    <!-- Панель калибровки — выезжает снизу, поверх всего -->
+    <LinearLayout
+        android:id="@+id/calibBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:gravity="center"
-        android:text="USB не подключён"
-        android:textColor="#80FFFFFF"
-        android:textSize="11sp"/>
+        android:orientation="vertical"
+        android:padding="8dp"
+        android:background="#F005080C"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Калибровка струй — выбери точку и тапни по салону"
+            android:textColor="#5CE1E6"
+            android:textSize="12sp"
+            android:gravity="center"
+            android:paddingBottom="6dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="5">
+
+            <Button android:id="@+id/calA" android:layout_width="0dp" android:layout_height="46dp"
+                android:layout_weight="1" android:layout_marginEnd="3dp"
+                android:text="Старт" android:textSize="11sp" android:padding="0dp"/>
+            <Button android:id="@+id/calB" android:layout_width="0dp" android:layout_height="46dp"
+                android:layout_weight="1" android:layout_marginEnd="3dp"
+                android:text="Стекло" android:textSize="11sp" android:padding="0dp"/>
+            <Button android:id="@+id/calC" android:layout_width="0dp" android:layout_height="46dp"
+                android:layout_weight="1" android:layout_marginEnd="3dp"
+                android:text="Лицо" android:textSize="11sp" android:padding="0dp"/>
+            <Button android:id="@+id/calD" android:layout_width="0dp" android:layout_height="46dp"
+                android:layout_weight="1" android:layout_marginEnd="3dp"
+                android:text="Ноги" android:textSize="11sp" android:padding="0dp"/>
+            <Button android:id="@+id/calReset" android:layout_width="0dp" android:layout_height="46dp"
+                android:layout_weight="1"
+                android:text="Сброс" android:textSize="11sp" android:padding="0dp"/>
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/calDone"
+            android:layout_width="match_parent"
+            android:layout_height="46dp"
+            android:layout_marginTop="6dp"
+            android:text="Готово"
+            android:textSize="13sp"
+            android:padding="0dp"/>
+    </LinearLayout>
 </LinearLayout>
