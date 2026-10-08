@@ -1,0 +1,38 @@
+name: Build APK
+on:
+  push: { branches: [ main ] }
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+
+      - run: npm install
+      - run: npx cap add android
+      - run: npx cap sync android
+
+      - name: Patch manifest + gradle + MainActivity
+        run: |
+          MAN=android/app/src/main/AndroidManifest.xml
+          if ! grep -q "android.hardware.usb.host" $MAN; then
+            sed -i 's|<application|<uses-feature android:name="android.hardware.usb.host" android:required="true"/>\n  <application|' $MAN
+          fi
+          GRAD=android/app/build.gradle
+          if ! grep -q "usb-serial-for-android" $GRAD; then
+            sed -i '/dependencies {/a\    implementation "com.github.mik3y:usb-serial-for-android:3.7.0"' $GRAD
+          fi
+          mkdir -p android/app/src/main/java/ru/audi/climate
+          cp android-extra/MainActivity.kt android/app/src/main/java/ru/audi/climate/MainActivity.kt
+
+      - run: cd android && chmod +x gradlew && ./gradlew assembleDebug
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: climate-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
