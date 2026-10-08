@@ -754,7 +754,12 @@ window.toggleLite = function(){
 /* ручные тумблеры из консоли */
 window.liteOn  = function(){ if(!document.body.classList.contains('lite')) toggleLite(); };
 window.liteOff = function(){ if(document.body.classList.contains('lite')) toggleLite(); };
-window.liteAuto = function(){ try{ localStorage.removeItem('climate.lite'); }catch(e){} location.reload(); };
+window.liteAuto = function(){ try{ localStorage.removeItem('climate.lite'); }catch(e){} location.reload(); }
+  /* --- кнопка "Подключить / Отключить" --- */
+$('connectBtn').addEventListener('click', function(){
+  if (isConnected) disconnect();
+  else connect();
+}); 
 </script>
 </body>
 </html>
