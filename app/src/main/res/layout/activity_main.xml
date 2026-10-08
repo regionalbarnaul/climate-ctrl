@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#0A0E16"
+    android:padding="10dp"
+    android:fitsSystemWindows="true">
+
+    <!-- Блок температуры -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="10dp"
+        android:background="#131C2C">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="A U D I"
+            android:textColor="#B3FFFFFF"
+            android:textSize="11sp"
+            android:letterSpacing="0.3"/>
+
+        <TextView
+            android:id="@+id/tempValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="20.0°C"
+            android:textColor="#FFFFFF"
+            android:textSize="40sp"
+            android:layout_marginTop="2dp"
+            android:layout_marginBottom="4dp"/>
+
+        <SeekBar
+            android:id="@+id/tempSlider"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="28"
+            android:progress="8"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="16°"
+                android:textColor="#80FFFFFF"
+                android:textSize="11sp"/>
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="end"
+                android:text="30°"
+                android:textColor="#80FFFFFF"
+                android:textSize="11sp"/>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Область салона (пока пустая, картинка позже) -->
+    <FrameLayout
+        android:id="@+id/carArea"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="8dp"
+        android:background="#05080C"/>
+
+    <!-- Кнопки направления -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal"
+        android:weightSum="4">
+
+        <Button
+            android:id="@+id/btnDir0"
+            android:layout_width="0dp"
+            android:layout_height="64dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="4dp"
+            android:text="Стекло"
+            android:textSize="12sp"/>
+
+        <Button
+            android:id="@+id/btnDir1"
+            android:layout_width="0dp"
+            android:layout_height="64dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="4dp"
+            android:text="Стек.+ноги"
+            android:textSize="11sp"/>
+
+        <Button
+            android:id="@+id/btnDir2"
+            android:layout_width="0dp"
+            android:layout_height="64dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="4dp"
+            android:text="Лицо"
+            android:textSize="12sp"/>
+
+        <Button
+            android:id="@+id/btnDir3"
+            android:layout_width="0dp"
+            android:layout_height="64dp"
+            android:layout_weight="1"
+            android:text="Ноги"
+            android:textSize="12sp"/>
+    </LinearLayout>
+
+    <!-- Блок вентилятора -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="8dp"
+        android:background="#131C2C">
+
+        <Button
+            android:id="@+id/btnFanMinus"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:text="−"
+            android:textSize="22sp"
+            android:padding="0dp"/>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp">
+
+            <TextView
+                android:id="@+id/fanValue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textColor="#FFFFFF"
+                android:textSize="24sp"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:orientation="horizontal">
+                <View android:id="@+id/seg0" android:layout_width="0dp" android:layout_height="5dp" android:layout_weight="1" android:layout_marginEnd="3dp" android:background="#1E2A3D"/>
+                <View android:id="@+id/seg1" android:layout_width="0dp" android:layout_height="5dp" android:layout_weight="1" android:layout_marginEnd="3dp" android:background="#1E2A3D"/>
+                <View android:id="@+id/seg2" android:layout_width="0dp" android:layout_height="5dp" android:layout_weight="1" android:layout_marginEnd="3dp" android:background="#1E2A3D"/>
+                <View android:id="@+id/seg3" android:layout_width="0dp" android:layout_height="5dp" android:layout_weight="1" android:layout_marginEnd="3dp" android:background="#1E2A3D"/>
+                <View android:id="@+id/seg4" android:layout_width="0dp" android:layout_height="5dp" android:layout_weight="1" android:background="#1E2A3D"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnFanPlus"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:text="+"
+            android:textSize="22sp"
+            android:padding="0dp"/>
+    </LinearLayout>
+
+    <!-- Подключить -->
+    <Button
+        android:id="@+id/connectBtn"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:layout_marginTop="8dp"
+        android:text="ПОДКЛЮЧИТЬ"
+        android:textSize="13sp"/>
+
+    <TextView
+        android:id="@+id/statusText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:gravity="center"
+        android:text="USB не подключён"
+        android:textColor="#80FFFFFF"
+        android:textSize="11sp"/>
+</LinearLayout>
