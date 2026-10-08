@@ -55,7 +55,7 @@ public class MainActivity extends BridgeActivity {
     };
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.i(TAG, "onCreate");
         toast("onCreate");
@@ -68,13 +68,13 @@ public class MainActivity extends BridgeActivity {
         scheduleAttach();
     }
 
-    @Override protected void onResume() {
+    @Override public void onResume() {
         super.onResume();
         Log.i(TAG, "onResume");
         scheduleAttach();
     }
 
-    @Override protected void onPostResume() {
+    @Override public void onPostResume() {
         super.onPostResume();
         scheduleAttach();
     }
@@ -140,7 +140,7 @@ public class MainActivity extends BridgeActivity {
         try { Toast.makeText(this, msg, Toast.LENGTH_SHORT).show(); } catch (Throwable ignored) {}
     }
 
-    @Override protected void onDestroy() {
+    @Override public void onDestroy() {
         try { unregisterReceiver(permReceiver); } catch (Exception ignored) {}
         io.execute(this::closePort);
         io.shutdown();
