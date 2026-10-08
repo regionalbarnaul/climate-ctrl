@@ -7,7 +7,6 @@
     android:padding="10dp"
     android:fitsSystemWindows="true">
 
-    <!-- Блок температуры -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -63,16 +62,17 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- Область салона (пока пустая, картинка позже) -->
-    <FrameLayout
-        android:id="@+id/carArea"
+    <ImageView
+        android:id="@+id/carImage"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:layout_marginTop="8dp"
-        android:background="#05080C"/>
+        android:background="#05080C"
+        android:scaleType="centerCrop"
+        android:src="@drawable/car"
+        android:contentDescription="Салон"/>
 
-    <!-- Кнопки направления -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -116,7 +116,6 @@
             android:textSize="12sp"/>
     </LinearLayout>
 
-    <!-- Блок вентилятора -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -173,7 +172,6 @@
             android:padding="0dp"/>
     </LinearLayout>
 
-    <!-- Подключить -->
     <Button
         android:id="@+id/connectBtn"
         android:layout_width="match_parent"
