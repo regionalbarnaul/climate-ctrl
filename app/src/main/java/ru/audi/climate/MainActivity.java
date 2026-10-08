@@ -150,6 +150,7 @@ public class MainActivity extends Activity {
             @Override public void onProgressChanged(SeekBar sb, int p, boolean fromUser) {
                 temp = 16 + p * 0.5;
                 tempValue.setText(String.format("%.1f°C", temp));
+                if (flowView != null) flowView.setTemperature(temp);
             }
             @Override public void onStartTrackingTouch(SeekBar sb) {}
             @Override public void onStopTrackingTouch(SeekBar sb) {
@@ -230,6 +231,7 @@ public class MainActivity extends Activity {
         if (flowView != null) {
             flowView.setFan(fan);
             flowView.setDirection(dir);
+            flowView.setTemperature(temp);
         }
 
         // ---- USB ----
@@ -310,7 +312,6 @@ public class MainActivity extends Activity {
                     usbConnected = true;
                     updateConnectButton();
                     setStatusMain("✓ Подключено");
-                    // синхронизация состояния
                     usbSend("V" + fan);
                     usbSend(String.valueOf(dir + 1));
                     usbSend("A" + (int)Math.round(((temp - 16) / 14) * 180));
@@ -345,10 +346,8 @@ public class MainActivity extends Activity {
         });
     }
 
-    // Сюда приходят строки от Arduino
     private void onUsbLine(String line) {
-        // Можно распарсить статус от платы. Пока просто игнор.
-        // Например, если Arduino шлёт "TEMP=23.5" — можно показывать.
+        // Сюда приходят строки от Arduino. Пока игнор.
     }
 
     private void setStatusMain(final String t) {
