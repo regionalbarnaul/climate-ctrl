@@ -16,6 +16,7 @@ public class MainActivity extends Activity {
     private Button[] dirButtons;
     private Button connectBtn;
     private TextView statusText;
+    private FlowView flowView;
 
     private double temp = 20.0;
     private int fan = 0;
@@ -37,6 +38,7 @@ public class MainActivity extends Activity {
         fanValue    = findViewById(R.id.fanValue);
         connectBtn  = findViewById(R.id.connectBtn);
         statusText  = findViewById(R.id.statusText);
+        flowView    = findViewById(R.id.flowView);
 
         dirButtons = new Button[]{
             findViewById(R.id.btnDir0),
@@ -52,14 +54,12 @@ public class MainActivity extends Activity {
             findViewById(R.id.seg4)
         };
 
-        // Стиль кнопок направления
         for (Button b : dirButtons) {
             b.setAllCaps(false);
             b.setBackgroundColor(COLOR_BG_BLOCK);
             b.setTextColor(COLOR_TEXT);
         }
 
-        // Кнопки вентилятора и connect
         Button minus = findViewById(R.id.btnFanMinus);
         Button plus  = findViewById(R.id.btnFanPlus);
         minus.setAllCaps(false);
@@ -72,7 +72,6 @@ public class MainActivity extends Activity {
         connectBtn.setBackgroundColor(0xFF0A1E20);
         connectBtn.setTextColor(COLOR_ACCENT);
 
-        // Слайдер 16..30 с шагом 0.5
         tempSlider.setMax(28);
         tempSlider.setProgress(8);
         tempSlider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -84,7 +83,6 @@ public class MainActivity extends Activity {
             @Override public void onStopTrackingTouch(SeekBar sb) {}
         });
 
-        // Кнопки направления
         for (int i = 0; i < dirButtons.length; i++) {
             final int idx = i;
             dirButtons[i].setOnClickListener(new View.OnClickListener() {
@@ -108,11 +106,17 @@ public class MainActivity extends Activity {
         renderFan();
         updateDirVisual();
         tempValue.setText(String.format("%.1f°C", temp));
+
+        if (flowView != null) {
+            flowView.setFan(fan);
+            flowView.setDirection(dir);
+        }
     }
 
     private void setDir(int n) {
         dir = n;
         updateDirVisual();
+        if (flowView != null) flowView.setDirection(dir);
     }
 
     private void updateDirVisual() {
@@ -131,6 +135,7 @@ public class MainActivity extends Activity {
     private void changeFan(int delta) {
         fan = Math.max(0, Math.min(5, fan + delta));
         renderFan();
+        if (flowView != null) flowView.setFan(fan);
     }
 
     private void renderFan() {
