@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
@@ -17,6 +18,9 @@ public class MainActivity extends Activity {
     private Button connectBtn;
     private TextView statusText;
     private FlowView flowView;
+    private LinearLayout calibBar;
+    private Button[] calibBtns;
+    private Button calReset, calDone;
 
     private double temp = 20.0;
     private int fan = 0;
@@ -39,6 +43,17 @@ public class MainActivity extends Activity {
         connectBtn  = findViewById(R.id.connectBtn);
         statusText  = findViewById(R.id.statusText);
         flowView    = findViewById(R.id.flowView);
+        calibBar    = findViewById(R.id.calibBar);
+        Button gear = findViewById(R.id.btnGear);
+
+        calibBtns = new Button[]{
+            findViewById(R.id.calA),
+            findViewById(R.id.calB),
+            findViewById(R.id.calC),
+            findViewById(R.id.calD)
+        };
+        calReset = findViewById(R.id.calReset);
+        calDone  = findViewById(R.id.calDone);
 
         dirButtons = new Button[]{
             findViewById(R.id.btnDir0),
@@ -72,6 +87,19 @@ public class MainActivity extends Activity {
         connectBtn.setBackgroundColor(0xFF0A1E20);
         connectBtn.setTextColor(COLOR_ACCENT);
 
+        gear.setAllCaps(false);
+        for (Button b : calibBtns) {
+            b.setAllCaps(false);
+            b.setBackgroundColor(COLOR_BG_BLOCK);
+            b.setTextColor(COLOR_TEXT);
+        }
+        calReset.setAllCaps(false);
+        calReset.setBackgroundColor(COLOR_BG_BLOCK);
+        calReset.setTextColor(0xFFFF8888);
+        calDone.setAllCaps(false);
+        calDone.setBackgroundColor(COLOR_BG_ACTIVE);
+        calDone.setTextColor(COLOR_ACCENT);
+
         tempSlider.setMax(28);
         tempSlider.setProgress(8);
         tempSlider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -103,6 +131,55 @@ public class MainActivity extends Activity {
             }
         });
 
+        gear.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                if (calibBar.getVisibility() == View.VISIBLE) {
+                    flowView.stopCalib();
+                    calibBar.setVisibility(View.GONE);
+                    statusText.setText("Точки сохранены");
+                } else {
+                    calibBar.setVisibility(View.VISIBLE);
+                    flowView.startCalib(0);
+                    highlightCalibBtn(0);
+                    statusText.setText("Тапни по салону для: Старт");
+                }
+            }
+        });
+
+        for (int i = 0; i < 4; i++) {
+            final int idx = i;
+            calibBtns[i].setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    flowView.startCalib(idx);
+                    highlightCalibBtn(idx);
+                    statusText.setText("Тапни по салону для: " + calibBtns[idx].getText());
+                }
+            });
+        }
+
+        calReset.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                flowView.resetPoints();
+                statusText.setText("Точки сброшены");
+            }
+        });
+
+        calDone.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                flowView.stopCalib();
+                calibBar.setVisibility(View.GONE);
+                statusText.setText("Готово, точки сохранены");
+            }
+        });
+
+        flowView.setListener(new FlowView.OnPointSet() {
+            @Override public void onPointSet(int index, float xf, float yf) {
+                statusText.setText(String.format("%s: x=%.2f y=%.2f",
+                    index == 0 ? "Старт" : index == 1 ? "Стекло" : index == 2 ? "Лицо" : "Ноги",
+                    xf, yf));
+            }
+        });
+
         renderFan();
         updateDirVisual();
         tempValue.setText(String.format("%.1f°C", temp));
@@ -110,6 +187,13 @@ public class MainActivity extends Activity {
         if (flowView != null) {
             flowView.setFan(fan);
             flowView.setDirection(dir);
+        }
+    }
+
+    private void highlightCalibBtn(int idx) {
+        for (int j = 0; j < 4; j++) {
+            calibBtns[j].setBackgroundColor(j == idx ? COLOR_BG_ACTIVE : COLOR_BG_BLOCK);
+            calibBtns[j].setTextColor(j == idx ? COLOR_ACCENT : COLOR_TEXT);
         }
     }
 
