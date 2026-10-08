@@ -19,7 +19,7 @@ public class MainActivity extends Activity {
     private TextView statusText;
     private FlowView flowView;
     private LinearLayout calibBar;
-    private Button[] calibBtns;
+    private Button[] calibBtns;   // 8 штук: старты 0..3, концы 4..7
     private Button calReset, calDone;
 
     private double temp = 20.0;
@@ -31,6 +31,11 @@ public class MainActivity extends Activity {
     private static final int COLOR_ACCENT    = 0xFF5CE1E6;
     private static final int COLOR_TEXT      = 0xFFFFFFFF;
     private static final int COLOR_SEG_OFF   = 0xFF1E2A3D;
+
+    private static final String[] CAL_NAMES = {
+        "Ст. стекло", "Ст. лицо", "Ст. ноги", "Ст. стек+ног",
+        "Кн. стекло", "Кн. лицо", "Кн. ноги", "Кн. стек+ног"
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,10 +52,10 @@ public class MainActivity extends Activity {
         Button gear = findViewById(R.id.btnGear);
 
         calibBtns = new Button[]{
-            findViewById(R.id.calA),
-            findViewById(R.id.calB),
-            findViewById(R.id.calC),
-            findViewById(R.id.calD)
+            findViewById(R.id.cal0), findViewById(R.id.cal1),
+            findViewById(R.id.cal2), findViewById(R.id.cal3),
+            findViewById(R.id.cal4), findViewById(R.id.cal5),
+            findViewById(R.id.cal6), findViewById(R.id.cal7)
         };
         calReset = findViewById(R.id.calReset);
         calDone  = findViewById(R.id.calDone);
@@ -127,7 +132,7 @@ public class MainActivity extends Activity {
 
         connectBtn.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
-                statusText.setText("USB пока не подключён (мост на этапе 4)");
+                statusText.setText("USB пока не подключён");
             }
         });
 
@@ -141,18 +146,18 @@ public class MainActivity extends Activity {
                     calibBar.setVisibility(View.VISIBLE);
                     flowView.startCalib(0);
                     highlightCalibBtn(0);
-                    statusText.setText("Тапни по салону для: Старт");
+                    statusText.setText("Тапни по салону: " + CAL_NAMES[0]);
                 }
             }
         });
 
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < calibBtns.length; i++) {
             final int idx = i;
             calibBtns[i].setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) {
                     flowView.startCalib(idx);
                     highlightCalibBtn(idx);
-                    statusText.setText("Тапни по салону для: " + calibBtns[idx].getText());
+                    statusText.setText("Тапни по салону: " + CAL_NAMES[idx]);
                 }
             });
         }
@@ -174,9 +179,8 @@ public class MainActivity extends Activity {
 
         flowView.setListener(new FlowView.OnPointSet() {
             @Override public void onPointSet(int index, float xf, float yf) {
-                statusText.setText(String.format("%s: x=%.2f y=%.2f",
-                    index == 0 ? "Старт" : index == 1 ? "Стекло" : index == 2 ? "Лицо" : "Ноги",
-                    xf, yf));
+                String n = (index >= 0 && index < CAL_NAMES.length) ? CAL_NAMES[index] : "?";
+                statusText.setText(String.format("%s: x=%.2f y=%.2f", n, xf, yf));
             }
         });
 
@@ -191,7 +195,7 @@ public class MainActivity extends Activity {
     }
 
     private void highlightCalibBtn(int idx) {
-        for (int j = 0; j < 4; j++) {
+        for (int j = 0; j < calibBtns.length; j++) {
             calibBtns[j].setBackgroundColor(j == idx ? COLOR_BG_ACTIVE : COLOR_BG_BLOCK);
             calibBtns[j].setTextColor(j == idx ? COLOR_ACCENT : COLOR_TEXT);
         }
