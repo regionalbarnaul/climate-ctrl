@@ -24,9 +24,10 @@ public class FlowView extends View {
     private int direction = 2;
     private final Handler h = new Handler(Looper.getMainLooper());
 
-    // 0 старт, 1 стекло, 2 лицо, 3 ноги
-    private float[] xf = {0.38f, 0.47f, 0.61f, 0.42f};
-    private float[] yf = {0.42f, 0.27f, 0.34f, 0.72f};
+    // 0..3 — старты для 4 направлений
+    // 4..7 — концы для 4 направлений
+    private float[] xf = {0.38f, 0.38f, 0.38f, 0.38f,   0.47f, 0.61f, 0.42f, 0.47f};
+    private float[] yf = {0.42f, 0.42f, 0.42f, 0.42f,   0.27f, 0.34f, 0.72f, 0.72f};
 
     private int calibTarget = -1;
     private OnPointSet listener;
@@ -54,7 +55,7 @@ public class FlowView extends View {
     }
 
     private void loadPoints() {
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 8; i++) {
             xf[i] = sp.getFloat("x" + i, xf[i]);
             yf[i] = sp.getFloat("y" + i, yf[i]);
         }
@@ -62,7 +63,7 @@ public class FlowView extends View {
 
     private void savePoints() {
         SharedPreferences.Editor e = sp.edit();
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 8; i++) {
             e.putFloat("x" + i, xf[i]);
             e.putFloat("y" + i, yf[i]);
         }
@@ -70,14 +71,13 @@ public class FlowView extends View {
     }
 
     public void setListener(OnPointSet l) { this.listener = l; }
-    public int getCalibTarget() { return calibTarget; }
 
     public void startCalib(int which) { calibTarget = which; }
     public void stopCalib() { calibTarget = -1; savePoints(); }
 
     public void resetPoints() {
-        xf = new float[]{0.38f, 0.47f, 0.61f, 0.42f};
-        yf = new float[]{0.42f, 0.27f, 0.34f, 0.72f};
+        xf = new float[]{0.38f, 0.38f, 0.38f, 0.38f, 0.47f, 0.61f, 0.42f, 0.47f};
+        yf = new float[]{0.42f, 0.42f, 0.42f, 0.42f, 0.27f, 0.34f, 0.72f, 0.72f};
         savePoints();
         rebuildPaths();
         invalidate();
@@ -120,22 +120,24 @@ public class FlowView extends View {
         int w = getWidth(), hh = getHeight();
         if (w == 0 || hh == 0) { paths = null; return; }
 
-        float Ax = xf[0] * w, Ay = yf[0] * hh;
-        float Bx = xf[1] * w, By = yf[1] * hh;
-        float Cx = xf[2] * w, Cy = yf[2] * hh;
-        float Dx = xf[3] * w, Dy = yf[3] * hh;
-
         java.util.List<Path> list = new java.util.ArrayList<>();
 
         switch (direction) {
-            case 0: list.add(line(Ax, Ay, Bx, By)); break;
-            case 1:
-                list.add(line(Ax, Ay, Bx, By));
-                list.add(line(Ax, Ay, Dx, Dy));
+            case 0:  // стекло: старт0 → конец4
+                list.add(line(xf[0]*w, yf[0]*hh, xf[4]*w, yf[4]*hh));
                 break;
-            case 2: list.add(line(Ax, Ay, Cx, Cy)); break;
-            case 3: list.add(line(Ax, Ay, Dx, Dy)); break;
-            default: list.add(line(Ax, Ay, Cx, Cy));
+            case 1:  // стек+ноги: старт3 → конец4 (стекло) + старт3 → конец6 (ноги)
+                list.add(line(xf[3]*w, yf[3]*hh, xf[4]*w, yf[4]*hh));
+                list.add(line(xf[3]*w, yf[3]*hh, xf[6]*w, yf[6]*hh));
+                break;
+            case 2:  // лицо: старт1 → конец5
+                list.add(line(xf[1]*w, yf[1]*hh, xf[5]*w, yf[5]*hh));
+                break;
+            case 3:  // ноги: старт2 → конец6
+                list.add(line(xf[2]*w, yf[2]*hh, xf[6]*w, yf[6]*hh));
+                break;
+            default:
+                list.add(line(xf[1]*w, yf[1]*hh, xf[5]*w, yf[5]*hh));
         }
         paths = list.toArray(new Path[0]);
     }
