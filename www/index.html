@@ -768,7 +768,9 @@ $('connectBtn').addEventListener('click', function(){
   if (isAPK) {
     setStatus('Мост OK, USB не подключён', true);
   } else {
-    setStatus('Мост НЕ найден: ' + typeof window.AndroidSerial, false);
+    setStatus('Мост НЕ найден — смотри тосты', false);
+  }
+}, 6000);
   }
 }, 6000);
 </script>
