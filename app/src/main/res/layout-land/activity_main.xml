@@ -9,31 +9,27 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="horizontal"
-        android:padding="6dp">
+        android:padding="8dp">
 
-        <!-- ЛЕВАЯ ПАНЕЛЬ 340dp -->
         <LinearLayout
-            android:layout_width="340dp"
+            android:layout_width="360dp"
             android:layout_height="match_parent"
             android:orientation="vertical"
-            android:layout_marginEnd="6dp">
+            android:layout_marginEnd="8dp">
 
-            <!-- Температура -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:gravity="center"
-                android:padding="6dp"
+                android:padding="10dp"
                 android:background="#131C2C">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="A U D I"
-                    android:textColor="#B3FFFFFF"
-                    android:textSize="10sp"
-                    android:letterSpacing="0.3"/>
+                <ru.audi.climate.AudiLogoView
+                    android:layout_width="130dp"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginBottom="2dp"/>
 
                 <TextView
                     android:id="@+id/tempValue"
@@ -41,9 +37,9 @@
                     android:layout_height="wrap_content"
                     android:text="20.0°C"
                     android:textColor="#FFFFFF"
-                    android:textSize="34sp"
-                    android:layout_marginTop="0dp"
-                    android:layout_marginBottom="0dp"/>
+                    android:textSize="42sp"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginBottom="2dp"/>
 
                 <SeekBar
                     android:id="@+id/tempSlider"
@@ -62,7 +58,7 @@
                         android:layout_weight="1"
                         android:text="16°"
                         android:textColor="#80FFFFFF"
-                        android:textSize="10sp"/>
+                        android:textSize="11sp"/>
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -70,87 +66,85 @@
                         android:gravity="end"
                         android:text="30°"
                         android:textColor="#80FFFFFF"
-                        android:textSize="10sp"/>
+                        android:textSize="11sp"/>
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Направления 2×2 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="6dp"
                 android:orientation="horizontal"
                 android:weightSum="2">
                 <Button
                     android:id="@+id/btnDir0"
-                    android:layout_width="0dp" android:layout_height="48dp"
-                    android:layout_weight="1" android:layout_marginEnd="3dp"
-                    android:text="Стекло" android:textSize="12sp"/>
+                    android:layout_width="0dp" android:layout_height="60dp"
+                    android:layout_weight="1" android:layout_marginEnd="4dp"
+                    android:text="Стекло" android:textSize="13sp"/>
                 <Button
                     android:id="@+id/btnDir1"
-                    android:layout_width="0dp" android:layout_height="48dp"
+                    android:layout_width="0dp" android:layout_height="60dp"
                     android:layout_weight="1"
                     android:text="Стек.+ноги" android:textSize="12sp"/>
             </LinearLayout>
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="3dp"
+                android:layout_marginTop="4dp"
                 android:orientation="horizontal"
                 android:weightSum="2">
                 <Button
                     android:id="@+id/btnDir2"
-                    android:layout_width="0dp" android:layout_height="48dp"
-                    android:layout_weight="1" android:layout_marginEnd="3dp"
-                    android:text="Лицо" android:textSize="12sp"/>
+                    android:layout_width="0dp" android:layout_height="60dp"
+                    android:layout_weight="1" android:layout_marginEnd="4dp"
+                    android:text="Лицо" android:textSize="13sp"/>
                 <Button
                     android:id="@+id/btnDir3"
-                    android:layout_width="0dp" android:layout_height="48dp"
+                    android:layout_width="0dp" android:layout_height="60dp"
                     android:layout_weight="1"
-                    android:text="Ноги" android:textSize="12sp"/>
+                    android:text="Ноги" android:textSize="13sp"/>
             </LinearLayout>
 
-            <!-- Вентилятор -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="6dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:padding="5dp"
+                android:padding="8dp"
                 android:background="#131C2C">
 
                 <Button
                     android:id="@+id/btnFanMinus"
-                    android:layout_width="44dp" android:layout_height="44dp"
-                    android:text="−" android:textSize="20sp" android:padding="0dp"/>
+                    android:layout_width="52dp" android:layout_height="52dp"
+                    android:text="−" android:textSize="22sp" android:padding="0dp"/>
 
                 <LinearLayout
                     android:layout_width="0dp" android:layout_height="wrap_content"
                     android:layout_weight="1" android:orientation="vertical"
                     android:gravity="center"
-                    android:paddingStart="6dp" android:paddingEnd="6dp">
+                    android:paddingStart="8dp" android:paddingEnd="8dp">
 
                     <TextView
                         android:id="@+id/fanValue"
                         android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="0" android:textColor="#FFFFFF" android:textSize="20sp"/>
+                        android:text="0" android:textColor="#FFFFFF" android:textSize="24sp"/>
 
                     <LinearLayout
                         android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:layout_marginTop="3dp" android:orientation="horizontal">
-                        <View android:id="@+id/seg0" android:layout_width="0dp" android:layout_height="4dp" android:layout_weight="1" android:layout_marginEnd="2dp" android:background="#1E2A3D"/>
-                        <View android:id="@+id/seg1" android:layout_width="0dp" android:layout_height="4dp" android:layout_weight="1" android:layout_marginEnd="2dp" android:background="#1E2A3D"/>
-                        <View android:id="@+id/seg2" android:layout_width="0dp" android:layout_height="4dp" android:layout_weight="1" android:layout_marginEnd="2dp" android:background="#1E2A3D"/>
-                        <View android:id="@+id/seg3" android:layout_width="0dp" android:layout_height="4dp" android:layout_weight="1" android:layout_marginEnd="2dp" android:background="#1E2A3D"/>
-                        <View android:id="@+id/seg4" android:layout_width="0dp" android:layout_height="4dp" android:layout_weight="1" android:background="#1E2A3D"/>
+                        android:layout_marginTop="5dp" android:orientation="horizontal">
+                        <View android:id="@+id/seg0" android:layout_width="0dp" android:layout_height="5dp" android:layout_weight="1" android:layout_marginEnd="3dp" android:background="#1E2A3D"/>
+                        <View android:id="@+id/seg1" android:layout_width="0dp" android:layout_height="5dp" android:layout_weight="1" android:layout_marginEnd="3dp" android:background="#1E2A3D"/>
+                        <View android:id="@+id/seg2" android:layout_width="0dp" android:layout_height="5dp" android:layout_weight="1" android:layout_marginEnd="3dp" android:background="#1E2A3D"/>
+                        <View android:id="@+id/seg3" android:layout_width="0dp" android:layout_height="5dp" android:layout_weight="1" android:layout_marginEnd="3dp" android:background="#1E2A3D"/>
+                        <View android:id="@+id/seg4" android:layout_width="0dp" android:layout_height="5dp" android:layout_weight="1" android:background="#1E2A3D"/>
                     </LinearLayout>
                 </LinearLayout>
 
                 <Button
                     android:id="@+id/btnFanPlus"
-                    android:layout_width="44dp" android:layout_height="44dp"
-                    android:text="+" android:textSize="20sp" android:padding="0dp"/>
+                    android:layout_width="52dp" android:layout_height="52dp"
+                    android:text="+" android:textSize="22sp" android:padding="0dp"/>
             </LinearLayout>
 
             <View
@@ -160,18 +154,17 @@
 
             <Button
                 android:id="@+id/connectBtn"
-                android:layout_width="match_parent" android:layout_height="46dp"
-                android:text="ПОДКЛЮЧИТЬ" android:textSize="12sp"/>
+                android:layout_width="match_parent" android:layout_height="52dp"
+                android:text="ПОДКЛЮЧИТЬ" android:textSize="13sp"/>
 
             <TextView
                 android:id="@+id/statusText"
                 android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:layout_marginTop="2dp" android:gravity="center"
+                android:layout_marginTop="3dp" android:gravity="center"
                 android:text="USB не подключён"
-                android:textColor="#80FFFFFF" android:textSize="10sp"/>
+                android:textColor="#80FFFFFF" android:textSize="11sp"/>
         </LinearLayout>
 
-        <!-- ПРАВАЯ — САЛОН -->
         <FrameLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
@@ -193,26 +186,25 @@
 
             <Button
                 android:id="@+id/btnGear"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
                 android:layout_gravity="top|end"
-                android:layout_margin="6dp"
+                android:layout_margin="8dp"
                 android:text="⚙"
-                android:textSize="20sp"
+                android:textSize="24sp"
                 android:textColor="#5CE1E6"
                 android:padding="0dp"
                 android:background="#99000000"/>
         </FrameLayout>
     </LinearLayout>
 
-    <!-- Панель калибровки -->
     <LinearLayout
         android:id="@+id/calibBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:orientation="vertical"
-        android:padding="6dp"
+        android:padding="8dp"
         android:background="#F005080C"
         android:visibility="gone">
 
@@ -221,58 +213,58 @@
             android:layout_height="wrap_content"
             android:text="Калибровка — выбери точку и тапни по салону"
             android:textColor="#5CE1E6"
-            android:textSize="11sp"
+            android:textSize="12sp"
             android:gravity="center"
-            android:paddingBottom="4dp"/>
+            android:paddingBottom="6dp"/>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal">
-            <Button android:id="@+id/cal0" android:layout_width="0dp" android:layout_height="40dp"
+            <Button android:id="@+id/cal0" android:layout_width="0dp" android:layout_height="44dp"
                 android:layout_weight="1" android:layout_marginEnd="3dp"
-                android:text="старт стекло" android:textSize="9sp" android:padding="0dp"/>
-            <Button android:id="@+id/cal1" android:layout_width="0dp" android:layout_height="40dp"
+                android:text="старт стекло" android:textSize="10sp" android:padding="0dp"/>
+            <Button android:id="@+id/cal1" android:layout_width="0dp" android:layout_height="44dp"
                 android:layout_weight="1" android:layout_marginEnd="3dp"
-                android:text="старт лицо" android:textSize="9sp" android:padding="0dp"/>
-            <Button android:id="@+id/cal2" android:layout_width="0dp" android:layout_height="40dp"
+                android:text="старт лицо" android:textSize="10sp" android:padding="0dp"/>
+            <Button android:id="@+id/cal2" android:layout_width="0dp" android:layout_height="44dp"
                 android:layout_weight="1" android:layout_marginEnd="3dp"
-                android:text="старт ноги" android:textSize="9sp" android:padding="0dp"/>
-            <Button android:id="@+id/cal3" android:layout_width="0dp" android:layout_height="40dp"
+                android:text="старт ноги" android:textSize="10sp" android:padding="0dp"/>
+            <Button android:id="@+id/cal3" android:layout_width="0dp" android:layout_height="44dp"
                 android:layout_weight="1"
-                android:text="старт стек+ног" android:textSize="9sp" android:padding="0dp"/>
+                android:text="старт стек+ног" android:textSize="10sp" android:padding="0dp"/>
         </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="3dp"
+            android:layout_marginTop="4dp"
             android:orientation="horizontal">
-            <Button android:id="@+id/cal4" android:layout_width="0dp" android:layout_height="40dp"
+            <Button android:id="@+id/cal4" android:layout_width="0dp" android:layout_height="44dp"
                 android:layout_weight="1" android:layout_marginEnd="3dp"
-                android:text="конец стекло" android:textSize="9sp" android:padding="0dp"/>
-            <Button android:id="@+id/cal5" android:layout_width="0dp" android:layout_height="40dp"
+                android:text="конец стекло" android:textSize="10sp" android:padding="0dp"/>
+            <Button android:id="@+id/cal5" android:layout_width="0dp" android:layout_height="44dp"
                 android:layout_weight="1" android:layout_marginEnd="3dp"
-                android:text="конец лицо" android:textSize="9sp" android:padding="0dp"/>
-            <Button android:id="@+id/cal6" android:layout_width="0dp" android:layout_height="40dp"
+                android:text="конец лицо" android:textSize="10sp" android:padding="0dp"/>
+            <Button android:id="@+id/cal6" android:layout_width="0dp" android:layout_height="44dp"
                 android:layout_weight="1" android:layout_marginEnd="3dp"
-                android:text="конец ноги" android:textSize="9sp" android:padding="0dp"/>
-            <Button android:id="@+id/cal7" android:layout_width="0dp" android:layout_height="40dp"
+                android:text="конец ноги" android:textSize="10sp" android:padding="0dp"/>
+            <Button android:id="@+id/cal7" android:layout_width="0dp" android:layout_height="44dp"
                 android:layout_weight="1"
-                android:text="конец стек+ног" android:textSize="9sp" android:padding="0dp"/>
+                android:text="конец стек+ног" android:textSize="10sp" android:padding="0dp"/>
         </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="3dp"
+            android:layout_marginTop="4dp"
             android:orientation="horizontal">
-            <Button android:id="@+id/calReset" android:layout_width="0dp" android:layout_height="40dp"
-                android:layout_weight="1" android:layout_marginEnd="3dp"
-                android:text="Сброс" android:textSize="11sp" android:padding="0dp"/>
-            <Button android:id="@+id/calDone" android:layout_width="0dp" android:layout_height="40dp"
+            <Button android:id="@+id/calReset" android:layout_width="0dp" android:layout_height="44dp"
+                android:layout_weight="1" android:layout_marginEnd="4dp"
+                android:text="Сброс" android:textSize="12sp" android:padding="0dp"/>
+            <Button android:id="@+id/calDone" android:layout_width="0dp" android:layout_height="44dp"
                 android:layout_weight="2"
-                android:text="Готово" android:textSize="12sp" android:padding="0dp"/>
+                android:text="Готово" android:textSize="13sp" android:padding="0dp"/>
         </LinearLayout>
     </LinearLayout>
 </FrameLayout>
