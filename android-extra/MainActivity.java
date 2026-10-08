@@ -59,6 +59,14 @@ public class MainActivity extends BridgeActivity {
         super.onCreate(savedInstanceState);
         Log.i(TAG, "onCreate");
         toast("onCreate");
+
+        // GPU-рендеринг WebView — лечит тач-лаги на слабых чипах
+        try {
+            if (getBridge() != null && getBridge().getWebView() != null) {
+                getBridge().getWebView().setLayerType(View.LAYER_TYPE_HARDWARE, null);
+            }
+        } catch (Throwable ignored) {}
+
         usbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
         IntentFilter f = new IntentFilter(ACTION);
         if (Build.VERSION.SDK_INT >= 33)
@@ -72,6 +80,12 @@ public class MainActivity extends BridgeActivity {
         super.onResume();
         Log.i(TAG, "onResume");
         scheduleAttach();
+        // Повторная попытка включить GPU-слой (на случай, если WebView появился позже)
+        try {
+            if (getBridge() != null && getBridge().getWebView() != null) {
+                getBridge().getWebView().setLayerType(View.LAYER_TYPE_HARDWARE, null);
+            }
+        } catch (Throwable ignored) {}
     }
 
     @Override public void onPostResume() {
@@ -90,6 +104,8 @@ public class MainActivity extends BridgeActivity {
         if (wv != null) {
             webView = wv;
             try {
+                // Ещё раз GPU-слой — теперь точно на нужном WebView
+                wv.setLayerType(View.LAYER_TYPE_HARDWARE, null);
                 wv.addJavascriptInterface(new UsbBridge(), "AndroidSerial");
                 bridgeAttached = true;
                 Log.i(TAG, "AndroidSerial attached on attempt " + attempts);
