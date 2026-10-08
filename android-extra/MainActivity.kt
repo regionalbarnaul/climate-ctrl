@@ -23,6 +23,7 @@ class MainActivity : BridgeActivity() {
     private var ioManager: SerialInputOutputManager? = null
     private val io = Executors.newSingleThreadExecutor()
     private var webView: WebView? = null
+    private var bridgeAttached = false
 
     private val ACTION = "ru.audi.climate.USB_PERMISSION"
 
@@ -37,13 +38,34 @@ class MainActivity : BridgeActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        webView = bridge.webView
         usbManager = getSystemService(Context.USB_SERVICE) as UsbManager
         val f = IntentFilter(ACTION)
         if (Build.VERSION.SDK_INT >= 33)
             registerReceiver(permReceiver, f, Context.RECEIVER_NOT_EXPORTED)
         else registerReceiver(permReceiver, f)
-        webView?.addJavascriptInterface(UsbBridge(), "AndroidSerial")
+    }
+
+    override fun onResume() {
+        super.onResume()
+        attachBridge()
+    }
+
+    override fun onPostResume() {
+        super.onPostResume()
+        attachBridge()
+    }
+
+    private fun attachBridge() {
+        if (bridgeAttached) return
+        val wv: WebView? = try { bridge?.webView } catch (_: Throwable) { null }
+        if (wv == null) return
+        webView = wv
+        wv.addJavascriptInterface(UsbBridge(), "AndroidSerial")
+        bridgeAttached = true
+        wv.post {
+            wv.evaluateJavascript(
+                "window.dispatchEvent(new Event('androidserial-ready'))", null)
+        }
     }
 
     override fun onDestroy() {
