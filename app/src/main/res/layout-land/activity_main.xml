@@ -53,20 +53,13 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
                     <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="16°"
-                        android:textColor="#80FFFFFF"
-                        android:textSize="11sp"/>
+                        android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1" android:text="16°"
+                        android:textColor="#80FFFFFF" android:textSize="11sp"/>
                     <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:gravity="end"
-                        android:text="30°"
-                        android:textColor="#80FFFFFF"
-                        android:textSize="11sp"/>
+                        android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1" android:gravity="end" android:text="30°"
+                        android:textColor="#80FFFFFF" android:textSize="11sp"/>
                 </LinearLayout>
             </LinearLayout>
 
@@ -76,16 +69,14 @@
                 android:layout_marginTop="6dp"
                 android:orientation="horizontal"
                 android:weightSum="2">
-                <Button
+                <ru.audi.climate.DirButton
                     android:id="@+id/btnDir0"
                     android:layout_width="0dp" android:layout_height="60dp"
-                    android:layout_weight="1" android:layout_marginEnd="4dp"
-                    android:text="Стекло" android:textSize="13sp"/>
-                <Button
+                    android:layout_weight="1" android:layout_marginEnd="4dp"/>
+                <ru.audi.climate.DirButton
                     android:id="@+id/btnDir1"
                     android:layout_width="0dp" android:layout_height="60dp"
-                    android:layout_weight="1"
-                    android:text="Стек.+ноги" android:textSize="12sp"/>
+                    android:layout_weight="1"/>
             </LinearLayout>
             <LinearLayout
                 android:layout_width="match_parent"
@@ -93,16 +84,14 @@
                 android:layout_marginTop="4dp"
                 android:orientation="horizontal"
                 android:weightSum="2">
-                <Button
+                <ru.audi.climate.DirButton
                     android:id="@+id/btnDir2"
                     android:layout_width="0dp" android:layout_height="60dp"
-                    android:layout_weight="1" android:layout_marginEnd="4dp"
-                    android:text="Лицо" android:textSize="13sp"/>
-                <Button
+                    android:layout_weight="1" android:layout_marginEnd="4dp"/>
+                <ru.audi.climate.DirButton
                     android:id="@+id/btnDir3"
                     android:layout_width="0dp" android:layout_height="60dp"
-                    android:layout_weight="1"
-                    android:text="Ноги" android:textSize="13sp"/>
+                    android:layout_weight="1"/>
             </LinearLayout>
 
             <LinearLayout
@@ -128,7 +117,8 @@
                     <TextView
                         android:id="@+id/fanValue"
                         android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="0" android:textColor="#FFFFFF" android:textSize="24sp"/>
+                        android:text="ВЫКЛ" android:textColor="#FFFFFF" android:textSize="20sp"
+                        android:singleLine="true"/>
 
                     <LinearLayout
                         android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -212,14 +202,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Калибровка — выбери точку и тапни по салону"
-            android:textColor="#5CE1E6"
-            android:textSize="12sp"
-            android:gravity="center"
-            android:paddingBottom="6dp"/>
+            android:textColor="#5CE1E6" android:textSize="12sp"
+            android:gravity="center" android:paddingBottom="6dp"/>
 
         <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="horizontal">
             <Button android:id="@+id/cal0" android:layout_width="0dp" android:layout_height="44dp"
                 android:layout_weight="1" android:layout_marginEnd="3dp"
@@ -236,10 +223,8 @@
         </LinearLayout>
 
         <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:orientation="horizontal">
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="4dp" android:orientation="horizontal">
             <Button android:id="@+id/cal4" android:layout_width="0dp" android:layout_height="44dp"
                 android:layout_weight="1" android:layout_marginEnd="3dp"
                 android:text="конец стекло" android:textSize="10sp" android:padding="0dp"/>
@@ -255,10 +240,8 @@
         </LinearLayout>
 
         <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:orientation="horizontal">
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="4dp" android:orientation="horizontal">
             <Button android:id="@+id/calReset" android:layout_width="0dp" android:layout_height="44dp"
                 android:layout_weight="1" android:layout_marginEnd="4dp"
                 android:text="Сброс" android:textSize="12sp" android:padding="0dp"/>
