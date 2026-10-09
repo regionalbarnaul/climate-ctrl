@@ -19,11 +19,15 @@
             android:padding="10dp"
             android:background="#131C2C">
 
-            <ru.audi.climate.AudiLogoView
-                android:layout_width="130dp"
-                android:layout_height="48dp"
-                android:layout_marginTop="2dp"
-                android:layout_marginBottom="2dp"/>
+            <ImageView
+                android:layout_width="180dp"
+                android:layout_height="126dp"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="4dp"
+                android:src="@drawable/audi_logo"
+                android:scaleType="fitCenter"
+                android:adjustViewBounds="true"
+                android:contentDescription="Audi"/>
 
             <TextView
                 android:id="@+id/tempValue"
