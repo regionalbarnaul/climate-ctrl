@@ -6,12 +6,14 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.drawable.GradientDrawable;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.TypedValue;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
@@ -46,11 +48,16 @@ public class MainActivity extends Activity {
     private int fan = 0;
     private int dir = 2;
 
+    // Цвета
     private static final int COLOR_BG_BLOCK  = 0xFF131C2C;
     private static final int COLOR_BG_ACTIVE = 0xFF1A3A3D;
     private static final int COLOR_ACCENT    = 0xFF5CE1E6;
     private static final int COLOR_TEXT      = 0xFFFFFFFF;
     private static final int COLOR_SEG_OFF   = 0xFF1E2A3D;
+    private static final int COLOR_BORDER    = 0x335CE1E6;
+    private static final int COLOR_DANGER    = 0xFFFF8888;
+
+    private static final String[] FAN_LABELS = {"ВЫКЛ", "MIN", "1", "2", "3", "MAX"};
 
     // ==== USB ====
     private static final String ACTION_USB_PERM = "ru.audi.climate.USB_PERMISSION";
@@ -80,7 +87,6 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // ---- UI инициализация ----
         tempValue   = findViewById(R.id.tempValue);
         tempSlider  = findViewById(R.id.tempSlider);
         fanValue    = findViewById(R.id.fanValue);
@@ -113,36 +119,23 @@ public class MainActivity extends Activity {
             findViewById(R.id.seg4)
         };
 
+        // Стиль — все кнопки бирюзовые со скруглениями
         for (Button b : dirButtons) {
-            b.setAllCaps(false);
-            b.setBackgroundColor(COLOR_BG_BLOCK);
-            b.setTextColor(COLOR_TEXT);
+            styleBtn(b, COLOR_BG_BLOCK, COLOR_BORDER, 14, COLOR_TEXT);
         }
 
         Button minus = findViewById(R.id.btnFanMinus);
         Button plus  = findViewById(R.id.btnFanPlus);
-        minus.setAllCaps(false);
-        plus.setAllCaps(false);
-        minus.setBackgroundColor(COLOR_BG_BLOCK);
-        plus.setBackgroundColor(COLOR_BG_BLOCK);
-        minus.setTextColor(COLOR_ACCENT);
-        plus.setTextColor(COLOR_ACCENT);
-        connectBtn.setAllCaps(false);
-        connectBtn.setBackgroundColor(0xFF0A1E20);
-        connectBtn.setTextColor(COLOR_ACCENT);
+        styleBtn(minus, COLOR_BG_BLOCK, COLOR_BORDER, 26, COLOR_ACCENT);
+        styleBtn(plus,  COLOR_BG_BLOCK, COLOR_BORDER, 26, COLOR_ACCENT);
+        styleBtn(connectBtn, 0xFF0A1E20, COLOR_ACCENT, 14, COLOR_ACCENT);
 
         gear.setAllCaps(false);
         for (Button b : calibBtns) {
-            b.setAllCaps(false);
-            b.setBackgroundColor(COLOR_BG_BLOCK);
-            b.setTextColor(COLOR_TEXT);
+            styleBtn(b, COLOR_BG_BLOCK, COLOR_BORDER, 10, COLOR_TEXT);
         }
-        calReset.setAllCaps(false);
-        calReset.setBackgroundColor(COLOR_BG_BLOCK);
-        calReset.setTextColor(0xFFFF8888);
-        calDone.setAllCaps(false);
-        calDone.setBackgroundColor(COLOR_BG_ACTIVE);
-        calDone.setTextColor(COLOR_ACCENT);
+        styleBtn(calReset, COLOR_BG_BLOCK, 0x55FF8888, 10, COLOR_DANGER);
+        styleBtn(calDone, COLOR_BG_ACTIVE, COLOR_ACCENT, 10, COLOR_ACCENT);
 
         tempSlider.setMax(28);
         tempSlider.setProgress(8);
@@ -180,7 +173,7 @@ public class MainActivity extends Activity {
             }
         });
 
-        // ---- калибровка ----
+        // Калибровка
         gear.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
                 if (calibBar.getVisibility() == View.VISIBLE) {
@@ -234,7 +227,7 @@ public class MainActivity extends Activity {
             flowView.setTemperature(temp);
         }
 
-        // ---- USB ----
+        // USB
         usbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
         IntentFilter f = new IntentFilter(ACTION_USB_PERM);
         if (Build.VERSION.SDK_INT >= 33)
@@ -252,6 +245,77 @@ public class MainActivity extends Activity {
         });
         usbExecutor.shutdown();
         super.onDestroy();
+    }
+
+    // ================= Стиль кнопок =================
+
+    private GradientDrawable roundBtn(int fill, int stroke, int radiusDp) {
+        GradientDrawable g = new GradientDrawable();
+        g.setShape(GradientDrawable.RECTANGLE);
+        float r = getResources().getDisplayMetrics().density * radiusDp;
+        g.setCornerRadius(r);
+        g.setColor(fill);
+        if (stroke != 0) {
+            float sw = getResources().getDisplayMetrics().density * 1.5f;
+            g.setStroke((int)sw, stroke);
+        }
+        return g;
+    }
+
+    private void styleBtn(Button b, int fill, int stroke, int radiusDp, int textColor) {
+        b.setAllCaps(false);
+        b.setBackground(roundBtn(fill, stroke, radiusDp));
+        b.setTextColor(textColor);
+    }
+
+    // ================= UI helpers =================
+
+    private void highlightCalibBtn(int idx) {
+        for (int j = 0; j < calibBtns.length; j++) {
+            if (j == idx) {
+                styleBtn(calibBtns[j], COLOR_BG_ACTIVE, COLOR_ACCENT, 10, COLOR_ACCENT);
+            } else {
+                styleBtn(calibBtns[j], COLOR_BG_BLOCK, COLOR_BORDER, 10, COLOR_TEXT);
+            }
+        }
+    }
+
+    private void setDir(int n) {
+        dir = n;
+        updateDirVisual();
+        if (flowView != null) flowView.setDirection(dir);
+        usbSend(String.valueOf(dir + 1));
+    }
+
+    private void updateDirVisual() {
+        for (int i = 0; i < dirButtons.length; i++) {
+            Button b = dirButtons[i];
+            if (i == dir) {
+                styleBtn(b, COLOR_BG_ACTIVE, COLOR_ACCENT, 14, COLOR_ACCENT);
+            } else {
+                styleBtn(b, COLOR_BG_BLOCK, COLOR_BORDER, 14, COLOR_TEXT);
+            }
+        }
+    }
+
+    private void changeFan(int delta) {
+        fan = Math.max(0, Math.min(5, fan + delta));
+        renderFan();
+        if (flowView != null) flowView.setFan(fan);
+        usbSend("V" + fan);
+    }
+
+    private void renderFan() {
+        int i = Math.max(0, Math.min(5, fan));
+        fanValue.setText(FAN_LABELS[i]);
+        if (i == 0 || i == 1 || i == 5) {
+            fanValue.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f);
+        } else {
+            fanValue.setTextSize(TypedValue.COMPLEX_UNIT_SP, 26f);
+        }
+        for (int k = 0; k < fanSegs.length; k++) {
+            fanSegs[k].setBackgroundColor(k < fan ? COLOR_ACCENT : COLOR_SEG_OFF);
+        }
     }
 
     // ================= USB =================
@@ -303,7 +367,7 @@ public class MainActivity extends Activity {
                             @Override public void run() { onUsbLine(s); }
                         });
                     }
-                    @Override public void onRunError(Exception e) { /* игнор */ }
+                    @Override public void onRunError(Exception e) { }
                 });
             usbExecutor.submit(usbIoManager);
 
@@ -347,7 +411,7 @@ public class MainActivity extends Activity {
     }
 
     private void onUsbLine(String line) {
-        // Сюда приходят строки от Arduino. Пока игнор.
+        // приём от Arduino — пока не используется
     }
 
     private void setStatusMain(final String t) {
@@ -359,53 +423,12 @@ public class MainActivity extends Activity {
     private void updateConnectButton() {
         if (usbConnected) {
             connectBtn.setText("ОТКЛЮЧИТЬ");
-            connectBtn.setTextColor(0xFFFF8888);
+            connectBtn.setTextColor(COLOR_DANGER);
+            connectBtn.setBackground(roundBtn(0xFF1E0A0E, 0xFFFF8888, 14));
         } else {
             connectBtn.setText("ПОДКЛЮЧИТЬ");
             connectBtn.setTextColor(COLOR_ACCENT);
-        }
-    }
-
-    // ================= UI helpers =================
-
-    private void highlightCalibBtn(int idx) {
-        for (int j = 0; j < calibBtns.length; j++) {
-            calibBtns[j].setBackgroundColor(j == idx ? COLOR_BG_ACTIVE : COLOR_BG_BLOCK);
-            calibBtns[j].setTextColor(j == idx ? COLOR_ACCENT : COLOR_TEXT);
-        }
-    }
-
-    private void setDir(int n) {
-        dir = n;
-        updateDirVisual();
-        if (flowView != null) flowView.setDirection(dir);
-        usbSend(String.valueOf(dir + 1));
-    }
-
-    private void updateDirVisual() {
-        for (int i = 0; i < dirButtons.length; i++) {
-            Button b = dirButtons[i];
-            if (i == dir) {
-                b.setBackgroundColor(COLOR_BG_ACTIVE);
-                b.setTextColor(COLOR_ACCENT);
-            } else {
-                b.setBackgroundColor(COLOR_BG_BLOCK);
-                b.setTextColor(COLOR_TEXT);
-            }
-        }
-    }
-
-    private void changeFan(int delta) {
-        fan = Math.max(0, Math.min(5, fan + delta));
-        renderFan();
-        if (flowView != null) flowView.setFan(fan);
-        usbSend("V" + fan);
-    }
-
-    private void renderFan() {
-        fanValue.setText(String.valueOf(fan));
-        for (int i = 0; i < fanSegs.length; i++) {
-            fanSegs[i].setBackgroundColor(i < fan ? COLOR_ACCENT : COLOR_SEG_OFF);
+            connectBtn.setBackground(roundBtn(0xFF0A1E20, COLOR_ACCENT, 14));
         }
     }
 }
