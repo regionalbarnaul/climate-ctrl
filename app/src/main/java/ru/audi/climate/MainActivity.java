@@ -31,12 +31,11 @@ import java.util.concurrent.Executors;
 
 public class MainActivity extends Activity {
 
-    // ==== UI ====
     private TextView tempValue;
     private SeekBar tempSlider;
     private TextView fanValue;
     private View[] fanSegs;
-    private Button[] dirButtons;
+    private DirButton[] dirButtons;
     private Button connectBtn;
     private TextView statusText;
     private FlowView flowView;
@@ -48,7 +47,6 @@ public class MainActivity extends Activity {
     private int fan = 0;
     private int dir = 2;
 
-    // Цвета
     private static final int COLOR_BG_BLOCK  = 0xFF131C2C;
     private static final int COLOR_BG_ACTIVE = 0xFF1A3A3D;
     private static final int COLOR_ACCENT    = 0xFF5CE1E6;
@@ -59,7 +57,6 @@ public class MainActivity extends Activity {
 
     private static final String[] FAN_LABELS = {"ВЫКЛ", "MIN", "1", "2", "3", "MAX"};
 
-    // ==== USB ====
     private static final String ACTION_USB_PERM = "ru.audi.climate.USB_PERMISSION";
     private UsbManager usbManager;
     private UsbSerialPort usbPort;
@@ -105,7 +102,7 @@ public class MainActivity extends Activity {
         calReset = findViewById(R.id.calReset);
         calDone  = findViewById(R.id.calDone);
 
-        dirButtons = new Button[]{
+        dirButtons = new DirButton[]{
             findViewById(R.id.btnDir0),
             findViewById(R.id.btnDir1),
             findViewById(R.id.btnDir2),
@@ -119,9 +116,12 @@ public class MainActivity extends Activity {
             findViewById(R.id.seg4)
         };
 
-        // Стиль — все кнопки бирюзовые со скруглениями
-        for (Button b : dirButtons) {
-            styleBtn(b, COLOR_BG_BLOCK, COLOR_BORDER, 14, COLOR_TEXT);
+        for (int i = 0; i < dirButtons.length; i++) {
+            dirButtons[i].setDirIndex(i);
+            final int idx = i;
+            dirButtons[i].setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) { setDir(idx); }
+            });
         }
 
         Button minus = findViewById(R.id.btnFanMinus);
@@ -152,13 +152,6 @@ public class MainActivity extends Activity {
             }
         });
 
-        for (int i = 0; i < dirButtons.length; i++) {
-            final int idx = i;
-            dirButtons[i].setOnClickListener(new View.OnClickListener() {
-                @Override public void onClick(View v) { setDir(idx); }
-            });
-        }
-
         minus.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { changeFan(-1); }
         });
@@ -173,7 +166,6 @@ public class MainActivity extends Activity {
             }
         });
 
-        // Калибровка
         gear.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
                 if (calibBar.getVisibility() == View.VISIBLE) {
@@ -227,7 +219,6 @@ public class MainActivity extends Activity {
             flowView.setTemperature(temp);
         }
 
-        // USB
         usbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
         IntentFilter f = new IntentFilter(ACTION_USB_PERM);
         if (Build.VERSION.SDK_INT >= 33)
@@ -247,8 +238,6 @@ public class MainActivity extends Activity {
         super.onDestroy();
     }
 
-    // ================= Стиль кнопок =================
-
     private GradientDrawable roundBtn(int fill, int stroke, int radiusDp) {
         GradientDrawable g = new GradientDrawable();
         g.setShape(GradientDrawable.RECTANGLE);
@@ -266,9 +255,13 @@ public class MainActivity extends Activity {
         b.setAllCaps(false);
         b.setBackground(roundBtn(fill, stroke, radiusDp));
         b.setTextColor(textColor);
+        float d = getResources().getDisplayMetrics().density;
+        b.setPadding((int)(d*6), 0, (int)(d*6), 0);
+        b.setMinHeight(0);
+        b.setMinimumHeight(0);
+        b.setMinWidth(0);
+        b.setMinimumWidth(0);
     }
-
-    // ================= UI helpers =================
 
     private void highlightCalibBtn(int idx) {
         for (int j = 0; j < calibBtns.length; j++) {
@@ -289,12 +282,7 @@ public class MainActivity extends Activity {
 
     private void updateDirVisual() {
         for (int i = 0; i < dirButtons.length; i++) {
-            Button b = dirButtons[i];
-            if (i == dir) {
-                styleBtn(b, COLOR_BG_ACTIVE, COLOR_ACCENT, 14, COLOR_ACCENT);
-            } else {
-                styleBtn(b, COLOR_BG_BLOCK, COLOR_BORDER, 14, COLOR_TEXT);
-            }
+            dirButtons[i].setActive(i == dir);
         }
     }
 
@@ -317,8 +305,6 @@ public class MainActivity extends Activity {
             fanSegs[k].setBackgroundColor(k < fan ? COLOR_ACCENT : COLOR_SEG_OFF);
         }
     }
-
-    // ================= USB =================
 
     private void usbConnect() {
         if (usbManager == null) { setStatusMain("USB сервис недоступен"); return; }
@@ -361,12 +347,7 @@ public class MainActivity extends Activity {
             usbPort = p;
             usbIoManager = new SerialInputOutputManager(p,
                 new SerialInputOutputManager.Listener() {
-                    @Override public void onNewData(byte[] data) {
-                        final String s = new String(data).trim();
-                        if (!s.isEmpty()) mainHandler.post(new Runnable() {
-                            @Override public void run() { onUsbLine(s); }
-                        });
-                    }
+                    @Override public void onNewData(byte[] data) { }
                     @Override public void onRunError(Exception e) { }
                 });
             usbExecutor.submit(usbIoManager);
@@ -408,10 +389,6 @@ public class MainActivity extends Activity {
                 catch (Exception ignored) {}
             }
         });
-    }
-
-    private void onUsbLine(String line) {
-        // приём от Arduino — пока не используется
     }
 
     private void setStatusMain(final String t) {
