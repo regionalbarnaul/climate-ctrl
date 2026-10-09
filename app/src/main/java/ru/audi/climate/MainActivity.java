@@ -43,6 +43,16 @@ public class MainActivity extends Activity {
     private Button[] calibBtns;
     private Button calReset, calDone;
 
+    private LinearLayout servoBar;
+    private Button[] servoBtns;
+    private Button servoMinus, servoPlus, servoE, servoClose;
+    private TextView servoLabel;
+    private int servoSelected = 0;
+
+    private static final String[] SERVO_NAMES = {
+        "S0 — вентилятор", "S1 — тепло/холод", "S2 — направление"
+    };
+
     private double temp = 20.0;
     private int fan = 0;
     private int dir = 2;
@@ -102,6 +112,18 @@ public class MainActivity extends Activity {
         calReset = findViewById(R.id.calReset);
         calDone  = findViewById(R.id.calDone);
 
+        servoBar   = findViewById(R.id.servoBar);
+        servoLabel = findViewById(R.id.servoLabel);
+        servoMinus = findViewById(R.id.servoMinus);
+        servoPlus  = findViewById(R.id.servoPlus);
+        servoE     = findViewById(R.id.servoE);
+        servoClose = findViewById(R.id.servoClose);
+        servoBtns  = new Button[]{
+            findViewById(R.id.servo0),
+            findViewById(R.id.servo1),
+            findViewById(R.id.servo2)
+        };
+
         dirButtons = new DirButton[]{
             findViewById(R.id.btnDir0),
             findViewById(R.id.btnDir1),
@@ -137,6 +159,14 @@ public class MainActivity extends Activity {
         styleBtn(calReset, COLOR_BG_BLOCK, 0x55FF8888, 10, COLOR_DANGER);
         styleBtn(calDone, COLOR_BG_ACTIVE, COLOR_ACCENT, 10, COLOR_ACCENT);
 
+        for (Button b : servoBtns) {
+            styleBtn(b, COLOR_BG_BLOCK, COLOR_BORDER, 10, COLOR_TEXT);
+        }
+        styleBtn(servoMinus, COLOR_BG_BLOCK, COLOR_BORDER, 12, COLOR_ACCENT);
+        styleBtn(servoPlus,  COLOR_BG_BLOCK, COLOR_BORDER, 12, COLOR_ACCENT);
+        styleBtn(servoClose, COLOR_BG_BLOCK, 0x55FF8888, 10, COLOR_DANGER);
+        styleBtn(servoE,     COLOR_BG_ACTIVE, COLOR_ACCENT, 10, COLOR_ACCENT);
+
         tempSlider.setMax(28);
         tempSlider.setProgress(8);
         tempSlider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -167,17 +197,12 @@ public class MainActivity extends Activity {
         });
 
         gear.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) {
-                if (calibBar.getVisibility() == View.VISIBLE) {
-                    flowView.stopCalib();
-                    calibBar.setVisibility(View.GONE);
-                    setStatusMain("Точки сохранены");
-                } else {
-                    calibBar.setVisibility(View.VISIBLE);
-                    flowView.startCalib(0);
-                    highlightCalibBtn(0);
-                    setStatusMain("Тапни по салону: старт стекло");
-                }
+            @Override public void onClick(View v) { toggleServoPanel(); }
+        });
+        gear.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override public boolean onLongClick(View v) {
+                toggleFlowCalib();
+                return true;
             }
         });
 
@@ -201,6 +226,43 @@ public class MainActivity extends Activity {
                 flowView.stopCalib();
                 calibBar.setVisibility(View.GONE);
                 setStatusMain("Готово, точки сохранены");
+            }
+        });
+
+        for (int i = 0; i < servoBtns.length; i++) {
+            final int idx = i;
+            servoBtns[i].setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    servoSelected = idx;
+                    highlightServoBtn(idx);
+                    usbSend("S" + idx);
+                    setStatusMain("Калибровка " + SERVO_NAMES[idx]);
+                }
+            });
+        }
+        servoMinus.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                usbSend("-");
+                setStatusMain(SERVO_NAMES[servoSelected] + "  −5°");
+            }
+        });
+        servoPlus.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                usbSend("+");
+                setStatusMain(SERVO_NAMES[servoSelected] + "  +5°");
+            }
+        });
+        servoE.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                usbSend("E");
+                servoBar.setVisibility(View.GONE);
+                setStatusMain("Сохранено в EEPROM");
+            }
+        });
+        servoClose.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                servoBar.setVisibility(View.GONE);
+                setStatusMain("Калибровка закрыта");
             }
         });
 
@@ -238,6 +300,36 @@ public class MainActivity extends Activity {
         super.onDestroy();
     }
 
+    private void toggleServoPanel() {
+        if (servoBar.getVisibility() == View.VISIBLE) {
+            servoBar.setVisibility(View.GONE);
+            setStatusMain("Калибровка закрыта");
+        } else {
+            calibBar.setVisibility(View.GONE);
+            flowView.stopCalib();
+            servoBar.setVisibility(View.VISIBLE);
+            servoSelected = 0;
+            highlightServoBtn(0);
+            usbSend("CAL");
+            usbSend("S0");
+            setStatusMain("Калибровка S0 (вентилятор)");
+        }
+    }
+
+    private void toggleFlowCalib() {
+        if (calibBar.getVisibility() == View.VISIBLE) {
+            flowView.stopCalib();
+            calibBar.setVisibility(View.GONE);
+            setStatusMain("Точки сохранены");
+        } else {
+            servoBar.setVisibility(View.GONE);
+            calibBar.setVisibility(View.VISIBLE);
+            flowView.startCalib(0);
+            highlightCalibBtn(0);
+            setStatusMain("Тапни по салону: старт стекло");
+        }
+    }
+
     private GradientDrawable roundBtn(int fill, int stroke, int radiusDp) {
         GradientDrawable g = new GradientDrawable();
         g.setShape(GradientDrawable.RECTANGLE);
@@ -271,6 +363,17 @@ public class MainActivity extends Activity {
                 styleBtn(calibBtns[j], COLOR_BG_BLOCK, COLOR_BORDER, 10, COLOR_TEXT);
             }
         }
+    }
+
+    private void highlightServoBtn(int idx) {
+        for (int j = 0; j < servoBtns.length; j++) {
+            if (j == idx) {
+                styleBtn(servoBtns[j], COLOR_BG_ACTIVE, COLOR_ACCENT, 10, COLOR_ACCENT);
+            } else {
+                styleBtn(servoBtns[j], COLOR_BG_BLOCK, COLOR_BORDER, 10, COLOR_TEXT);
+            }
+        }
+        if (servoLabel != null) servoLabel.setText(SERVO_NAMES[idx]);
     }
 
     private void setDir(int n) {
