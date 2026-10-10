@@ -318,11 +318,14 @@ public class MainActivity extends Activity {
 
     private void toggleServoPanel() {
         if (servoBar.getVisibility() == View.VISIBLE) {
+            usbSend("X");
             servoBar.setVisibility(View.GONE);
             setStatusMain("Калибровка закрыта");
         } else {
-            calibBar.setVisibility(View.GONE);
-            flowView.stopCalib();
+            if (calibBar.getVisibility() == View.VISIBLE) {
+                flowView.stopCalib();
+                calibBar.setVisibility(View.GONE);
+            }
             servoBar.setVisibility(View.VISIBLE);
             servoSelected = 0;
             highlightServoBtn(0);
@@ -338,7 +341,10 @@ public class MainActivity extends Activity {
             calibBar.setVisibility(View.GONE);
             setStatusMain("Точки сохранены");
         } else {
-            servoBar.setVisibility(View.GONE);
+            if (servoBar.getVisibility() == View.VISIBLE) {
+                usbSend("X");
+                servoBar.setVisibility(View.GONE);
+            }
             calibBar.setVisibility(View.VISIBLE);
             flowView.startCalib(0);
             highlightCalibBtn(0);
