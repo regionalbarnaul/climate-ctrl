@@ -90,6 +90,14 @@ public class MainActivity extends Activity {
     };
 
     @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putDouble("temp", temp);
+        outState.putInt("fan", fan);
+        outState.putInt("dir", dir);
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -138,6 +146,13 @@ public class MainActivity extends Activity {
             findViewById(R.id.seg4)
         };
 
+        // Восстановление состояния после поворота экрана
+        if (savedInstanceState != null) {
+            temp = savedInstanceState.getDouble("temp", 20.0);
+            fan  = savedInstanceState.getInt("fan", 0);
+            dir  = savedInstanceState.getInt("dir", 2);
+        }
+
         for (int i = 0; i < dirButtons.length; i++) {
             dirButtons[i].setDirIndex(i);
             final int idx = i;
@@ -168,7 +183,7 @@ public class MainActivity extends Activity {
         styleBtn(servoE,     COLOR_BG_ACTIVE, COLOR_ACCENT, 10, COLOR_ACCENT);
 
         tempSlider.setMax(28);
-        tempSlider.setProgress(8);
+        tempSlider.setProgress((int)Math.round((temp - 16) / 0.5));
         tempSlider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar sb, int p, boolean fromUser) {
                 temp = 16 + p * 0.5;
@@ -261,6 +276,7 @@ public class MainActivity extends Activity {
         });
         servoClose.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
+                usbSend("X");
                 servoBar.setVisibility(View.GONE);
                 setStatusMain("Калибровка закрыта");
             }
