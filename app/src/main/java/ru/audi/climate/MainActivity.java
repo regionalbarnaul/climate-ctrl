@@ -72,7 +72,7 @@ public class MainActivity extends Activity {
     private UsbSerialPort usbPort;
     private SerialInputOutputManager usbIoManager;
     private final ExecutorService usbExecutor = Executors.newSingleThreadExecutor();
-    private boolean usbConnected = false;
+    private volatile boolean usbConnected = false;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     private final BroadcastReceiver permReceiver = new BroadcastReceiver() {
@@ -146,7 +146,6 @@ public class MainActivity extends Activity {
             findViewById(R.id.seg4)
         };
 
-        // Восстановление состояния после поворота экрана
         if (savedInstanceState != null) {
             temp = savedInstanceState.getDouble("temp", 20.0);
             fan  = savedInstanceState.getInt("fan", 0);
@@ -309,10 +308,11 @@ public class MainActivity extends Activity {
 
     @Override protected void onDestroy() {
         try { unregisterReceiver(permReceiver); } catch (Exception ignored) {}
-        usbExecutor.execute(new Runnable() {
+        try { if (usbIoManager != null) usbIoManager.stop(); } catch (Exception ignored) {}
+        usbIoManager = null;
+        new Thread(new Runnable() {
             @Override public void run() { closePort(); }
-        });
-        usbExecutor.shutdown();
+        }).start();
         super.onDestroy();
     }
 
@@ -453,9 +453,11 @@ public class MainActivity extends Activity {
     }
 
     private void usbDisconnect() {
-        usbExecutor.execute(new Runnable() {
+        try { if (usbIoManager != null) usbIoManager.stop(); } catch (Exception ignored) {}
+        usbIoManager = null;
+        new Thread(new Runnable() {
             @Override public void run() { closePort(); }
-        });
+        }).start();
     }
 
     private void openPort() {
