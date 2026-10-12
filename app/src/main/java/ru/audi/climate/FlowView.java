@@ -5,7 +5,6 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
@@ -31,7 +30,6 @@ public class FlowView extends View {
     private float[] ptsX = new float[8];
     private float[] ptsY = new float[8];
 
-    // dir 0=стекло, 1=стек+ноги, 2=лицо, 3=ноги
     private static final int[] START_IDX = {0, 3, 1, 2};
     private static final int[] END_IDX   = {4, 7, 5, 6};
 
@@ -41,7 +39,7 @@ public class FlowView extends View {
 
     private int calibIndex = -1;
 
-    private static final int N = 250;
+    private static final int N = 400;
     private float[] pT       = new float[N];
     private float[] pOffX    = new float[N];
     private float[] pOffY    = new float[N];
@@ -50,7 +48,6 @@ public class FlowView extends View {
     private float[] pPhase   = new float[N];
     private float[] pFreq    = new float[N];
 
-    private Paint bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint particlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Bitmap sprite;
     private Matrix mtx = new Matrix();
@@ -69,6 +66,7 @@ public class FlowView extends View {
             resetParticle(i);
             pT[i] = rnd.nextFloat();
         }
+        setLayerType(LAYER_TYPE_HARDWARE, null);
     }
 
     private void createSprite() {
@@ -117,9 +115,9 @@ public class FlowView extends View {
 
     private void resetParticle(int i) {
         pT[i] = -0.2f * rnd.nextFloat();
-        pOffX[i] = (rnd.nextFloat() - 0.5f) * 0.05f;
-        pOffY[i] = (rnd.nextFloat() - 0.5f) * 0.05f;
-        pSize[i] = 12 + rnd.nextFloat() * 24;
+        pOffX[i] = (rnd.nextFloat() - 0.5f) * 0.03f;
+        pOffY[i] = (rnd.nextFloat() - 0.5f) * 0.03f;
+        pSize[i] = 6 + rnd.nextFloat() * 10;
         pSpeed[i] = 0.7f + rnd.nextFloat() * 0.6f;
         pPhase[i] = rnd.nextFloat() * (float)Math.PI * 2f;
         pFreq[i] = 0.5f + rnd.nextFloat() * 1.5f;
@@ -160,14 +158,6 @@ public class FlowView extends View {
         int h = getHeight();
         if (w == 0 || h == 0) return;
 
-        bgPaint.setShader(new LinearGradient(
-            0, 0, 0, h,
-            Color.parseColor("#0A1520"),
-            Color.parseColor("#05080C"),
-            Shader.TileMode.CLAMP));
-        canvas.drawRect(0, 0, w, h, bgPaint);
-        bgPaint.setShader(null);
-
         long now = System.nanoTime();
         float dt = (now - lastNano) / 1_000_000_000f;
         lastNano = now;
@@ -184,7 +174,7 @@ public class FlowView extends View {
 
     private void updateParticles(float dt) {
         if (fan <= 0) return;
-        float baseSpeed = 0.2f + fan * 0.2f;
+        float baseSpeed = 0.15f + fan * 0.15f;
         for (int i = 0; i < N; i++) {
             pT[i] += baseSpeed * pSpeed[i] * dt;
             if (pT[i] > 1f) resetParticle(i);
@@ -219,16 +209,16 @@ public class FlowView extends View {
             float bx = sx + (ex - sx) * t;
             float by = sy + (ey - sy) * t;
 
-            float turb  = (float)Math.sin(t * pFreq[i] * 6f + pPhase[i]) * t * 0.025f * w;
-            float turb2 = (float)Math.cos(t * pFreq[i] * 4f + pPhase[i]) * t * 0.015f * h;
+            float turb  = (float)Math.sin(t * pFreq[i] * 6f + pPhase[i]) * t * 0.008f * w;
+            float turb2 = (float)Math.cos(t * pFreq[i] * 4f + pPhase[i]) * t * 0.005f * h;
 
             float px = bx + pOffX[i] * w + turb;
             float py = by + pOffY[i] * h + turb2;
 
-            float scale = 0.5f + t * 1.8f;
+            float scale = 0.6f + t * 1.6f;
             float radius = pSize[i] * scale * (w / 400f);
 
-            float alpha = (float)Math.sin(t * Math.PI) * 0.08f * 255f;
+            float alpha = (float)Math.sin(t * Math.PI) * 0.06f * 255f;
             if (alpha <= 0f) continue;
             if (alpha > 255f) alpha = 255f;
 
