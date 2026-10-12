@@ -31,7 +31,8 @@
                     android:layout_marginTop="4dp"
                     android:layout_marginBottom="4dp"
                     android:background="@drawable/audi_backdrop"
-                    android:padding="10dp">
+                    android:padding="10dp"
+                    android:clipToOutline="true">
 
                     <ImageView
                         android:layout_width="160dp"
