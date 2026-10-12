@@ -227,28 +227,22 @@
                 android:layout_weight="1" android:layout_marginEnd="3dp"
                 android:text="старт лицо" android:textSize="10sp" android:padding="0dp"/>
             <Button android:id="@+id/cal2" android:layout_width="0dp" android:layout_height="44dp"
-                android:layout_weight="1" android:layout_marginEnd="3dp"
-                android:text="старт ноги" android:textSize="10sp" android:padding="0dp"/>
-            <Button android:id="@+id/cal3" android:layout_width="0dp" android:layout_height="44dp"
                 android:layout_weight="1"
-                android:text="старт стек+ног" android:textSize="10sp" android:padding="0dp"/>
+                android:text="старт ноги" android:textSize="10sp" android:padding="0dp"/>
         </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent" android:layout_height="wrap_content"
             android:layout_marginTop="4dp" android:orientation="horizontal">
-            <Button android:id="@+id/cal4" android:layout_width="0dp" android:layout_height="44dp"
+            <Button android:id="@+id/cal3" android:layout_width="0dp" android:layout_height="44dp"
                 android:layout_weight="1" android:layout_marginEnd="3dp"
                 android:text="конец стекло" android:textSize="10sp" android:padding="0dp"/>
-            <Button android:id="@+id/cal5" android:layout_width="0dp" android:layout_height="44dp"
+            <Button android:id="@+id/cal4" android:layout_width="0dp" android:layout_height="44dp"
                 android:layout_weight="1" android:layout_marginEnd="3dp"
                 android:text="конец лицо" android:textSize="10sp" android:padding="0dp"/>
-            <Button android:id="@+id/cal6" android:layout_width="0dp" android:layout_height="44dp"
-                android:layout_weight="1" android:layout_marginEnd="3dp"
-                android:text="конец ноги" android:textSize="10sp" android:padding="0dp"/>
-            <Button android:id="@+id/cal7" android:layout_width="0dp" android:layout_height="44dp"
+            <Button android:id="@+id/cal5" android:layout_width="0dp" android:layout_height="44dp"
                 android:layout_weight="1"
-                android:text="конец стек+ног" android:textSize="10sp" android:padding="0dp"/>
+                android:text="конец ноги" android:textSize="10sp" android:padding="0dp"/>
         </LinearLayout>
 
         <LinearLayout
