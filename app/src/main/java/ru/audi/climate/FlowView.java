@@ -27,11 +27,15 @@ public class FlowView extends View {
     private SharedPreferences prefs;
     private Random rnd = new Random();
 
-    private float[] ptsX = new float[8];
-    private float[] ptsY = new float[8];
+    // 6 точек:
+    // 0 = старт стекло, 1 = старт лицо, 2 = старт ноги
+    // 3 = конец стекло, 4 = конец лицо, 5 = конец ноги
+    private float[] ptsX = new float[6];
+    private float[] ptsY = new float[6];
 
-    private static final int[] START_IDX = {0, 3, 1, 2};
-    private static final int[] END_IDX   = {4, 7, 5, 6};
+    // dir 0=стекло, 1=стек+ноги, 2=лицо, 3=ноги
+    private static final int[] START_IDX = {0, 0, 1, 2};
+    private static final int[] END_IDX   = {3, 3, 4, 5};
 
     private int fan = 0;
     private int dir = 2;
@@ -59,7 +63,7 @@ public class FlowView extends View {
     public FlowView(Context c, AttributeSet a, int d) { super(c, a, d); init(c); }
 
     private void init(Context c) {
-        prefs = c.getSharedPreferences("flow2", Context.MODE_PRIVATE);
+        prefs = c.getSharedPreferences("flow3", Context.MODE_PRIVATE);
         createSprite();
         loadPoints();
         for (int i = 0; i < N; i++) {
@@ -84,29 +88,29 @@ public class FlowView extends View {
     }
 
     private void loadPoints() {
+        // 0 старт стекло, 1 старт лицо, 2 старт ноги
         float[][] defStart = {
             {0.42f, 0.62f},
             {0.42f, 0.60f},
-            {0.42f, 0.65f},
-            {0.42f, 0.62f}
+            {0.42f, 0.65f}
         };
+        // 3 конец стекло, 4 конец лицо, 5 конец ноги
         float[][] defEnd = {
             {0.22f, 0.18f},
             {0.60f, 0.42f},
-            {0.55f, 0.92f},
-            {0.22f, 0.18f}
+            {0.55f, 0.92f}
         };
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 3; i++) {
             ptsX[i]     = prefs.getFloat("x" + i,     defStart[i][0]);
             ptsY[i]     = prefs.getFloat("y" + i,     defStart[i][1]);
-            ptsX[i + 4] = prefs.getFloat("x" + (i+4), defEnd[i][0]);
-            ptsY[i + 4] = prefs.getFloat("y" + (i+4), defEnd[i][1]);
+            ptsX[i + 3] = prefs.getFloat("x" + (i+3), defEnd[i][0]);
+            ptsY[i + 3] = prefs.getFloat("y" + (i+3), defEnd[i][1]);
         }
     }
 
     private void savePoints() {
         SharedPreferences.Editor e = prefs.edit();
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 6; i++) {
             e.putFloat("x" + i, ptsX[i]);
             e.putFloat("y" + i, ptsY[i]);
         }
@@ -182,12 +186,6 @@ public class FlowView extends View {
     }
 
     private void drawStream(Canvas canvas, int w, int h) {
-        int sIdx = START_IDX[dir];
-        int eIdx = END_IDX[dir];
-
-        float sx = ptsX[sIdx] * w;
-        float sy = ptsY[sIdx] * h;
-
         int[] rgb = tempColor(temperature);
         PorterDuffColorFilter cf = new PorterDuffColorFilter(
             Color.rgb(rgb[0], rgb[1], rgb[2]), PorterDuff.Mode.SRC_IN);
@@ -197,14 +195,20 @@ public class FlowView extends View {
             float t = pT[i];
             if (t < 0f) continue;
 
-            float ex, ey;
+            int sIdx, eIdx;
             if (dir == 1) {
-                if (i % 2 == 0) { ex = ptsX[4] * w; ey = ptsY[4] * h; }
-                else            { ex = ptsX[6] * w; ey = ptsY[6] * h; }
+                // стек+ноги: чётные — стекло, нечётные — ноги
+                if (i % 2 == 0) { sIdx = 0; eIdx = 3; }  // стекло
+                else            { sIdx = 2; eIdx = 5; }  // ноги
             } else {
-                ex = ptsX[eIdx] * w;
-                ey = ptsY[eIdx] * h;
+                sIdx = START_IDX[dir];
+                eIdx = END_IDX[dir];
             }
+
+            float sx = ptsX[sIdx] * w;
+            float sy = ptsY[sIdx] * h;
+            float ex = ptsX[eIdx] * w;
+            float ey = ptsY[eIdx] * h;
 
             float bx = sx + (ex - sx) * t;
             float by = sy + (ey - sy) * t;
@@ -248,7 +252,7 @@ public class FlowView extends View {
 
     private void drawCalibMarkers(Canvas canvas, int w, int h) {
         Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 6; i++) {
             float x = ptsX[i] * w;
             float y = ptsY[i] * h;
             boolean active = (i == calibIndex);
