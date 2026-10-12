@@ -4,325 +4,271 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.graphics.PathMeasure;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RadialGradient;
 import android.graphics.Shader;
-import android.os.Handler;
-import android.os.Looper;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
 public class FlowView extends View {
 
-    public interface OnPointSet { void onPointSet(int index, float xf, float yf); }
+    public interface OnPointSet {
+        void onPointSet(int index, float xf, float yf);
+    }
 
-    private final Paint paintBlob;
-    private final Paint paintParticle;
-    private Bitmap softBlob;
-    private PathMeasure[] measures;
-    private float[] pathLengths;
-    private final List<Particle> particles = new ArrayList<>();
-    private final Random rng = new Random();
-    private float phase = 0f;
-    private int fanSpeed = 0;
-    private int direction = 2;
-    private int fogColor = 0xFF5CE1E6;
-    private final Handler h = new Handler(Looper.getMainLooper());
-    private final Matrix matrix = new Matrix();
-
-    private float[] xf = {0.38f, 0.38f, 0.38f, 0.38f,   0.47f, 0.61f, 0.42f, 0.47f};
-    private float[] yf = {0.42f, 0.42f, 0.42f, 0.42f,   0.27f, 0.34f, 0.72f, 0.72f};
-
-    private int calibTarget = -1;
     private OnPointSet listener;
-    private final SharedPreferences sp;
+    private SharedPreferences prefs;
+    private Random rnd = new Random();
 
-    private static final int BLOB_SIZE = 128;
-    private static final int PUFFS_PER_PATH = 14;
+    private float[] ptsX = new float[8];
+    private float[] ptsY = new float[8];
 
-    private final Runnable ticker = new Runnable() {
-        @Override public void run() {
-            updateParticles();
-            phase += 0.05f;
-            if (phase > 6.2832f) phase -= 6.2832f;
-            invalidate();
-            h.postDelayed(this, 33);
-        }
-    };
+    // dir 0=стекло, 1=стек+ноги, 2=лицо, 3=ноги
+    private static final int[] START_IDX = {0, 3, 1, 2};
+    private static final int[] END_IDX   = {4, 7, 5, 6};
 
-    private static class Particle {
-        int pathIndex;
-        float t;
-        float speed;
-        float size;
-        float wobbleSeed;
-    }
+    private int fan = 0;
+    private int dir = 2;
+    private double temperature = 20.0;
 
-    public FlowView(Context c) { this(c, null); }
+    private int calibIndex = -1;
 
-    public FlowView(Context c, AttributeSet a) {
-        super(c, a);
-        sp = c.getSharedPreferences("flow", Context.MODE_PRIVATE);
+    private static final int N = 250;
+    private float[] pT       = new float[N];
+    private float[] pOffX    = new float[N];
+    private float[] pOffY    = new float[N];
+    private float[] pSize    = new float[N];
+    private float[] pSpeed   = new float[N];
+    private float[] pPhase   = new float[N];
+    private float[] pFreq    = new float[N];
+
+    private Paint bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private Paint particlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private Bitmap sprite;
+    private Matrix mtx = new Matrix();
+
+    private long lastNano = 0;
+
+    public FlowView(Context c) { super(c); init(c); }
+    public FlowView(Context c, AttributeSet a) { super(c, a); init(c); }
+    public FlowView(Context c, AttributeSet a, int d) { super(c, a, d); init(c); }
+
+    private void init(Context c) {
+        prefs = c.getSharedPreferences("flow2", Context.MODE_PRIVATE);
+        createSprite();
         loadPoints();
-
-        paintBlob = new Paint(Paint.ANTI_ALIAS_FLAG);
-        paintBlob.setFilterBitmap(true);
-
-        paintParticle = new Paint(Paint.ANTI_ALIAS_FLAG);
-        paintParticle.setStyle(Paint.Style.FILL);
-
-        softBlob = makeSoftBlob();
+        for (int i = 0; i < N; i++) {
+            resetParticle(i);
+            pT[i] = rnd.nextFloat();
+        }
     }
 
-    private Bitmap makeSoftBlob() {
-        int s = BLOB_SIZE;
-        Bitmap bmp = Bitmap.createBitmap(s, s, Bitmap.Config.ARGB_8888);
-        Canvas c = new Canvas(bmp);
+    private void createSprite() {
+        int size = 64;
+        sprite = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+        Canvas cc = new Canvas(sprite);
         Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-        RadialGradient grad = new RadialGradient(
-            s / 2f, s / 2f, s / 2f,
-            new int[]{ 0xFFFFFFFF, 0x88FFFFFF, 0x22FFFFFF, 0x00FFFFFF },
-            new float[]{ 0f, 0.25f, 0.6f, 1f },
+        RadialGradient rg = new RadialGradient(
+            size / 2f, size / 2f, size / 2f,
+            new int[]{0xFFFFFFFF, 0x40FFFFFF, 0x00FFFFFF},
+            new float[]{0f, 0.4f, 1f},
             Shader.TileMode.CLAMP);
-        p.setShader(grad);
-        c.drawCircle(s / 2f, s / 2f, s / 2f, p);
-        return bmp;
+        p.setShader(rg);
+        cc.drawCircle(size / 2f, size / 2f, size / 2f, p);
     }
 
     private void loadPoints() {
-        for (int i = 0; i < 8; i++) {
-            xf[i] = sp.getFloat("x" + i, xf[i]);
-            yf[i] = sp.getFloat("y" + i, yf[i]);
+        float[][] defStart = {
+            {0.42f, 0.62f},
+            {0.42f, 0.60f},
+            {0.42f, 0.65f},
+            {0.42f, 0.62f}
+        };
+        float[][] defEnd = {
+            {0.22f, 0.18f},
+            {0.60f, 0.42f},
+            {0.55f, 0.92f},
+            {0.22f, 0.18f}
+        };
+        for (int i = 0; i < 4; i++) {
+            ptsX[i]     = prefs.getFloat("x" + i,     defStart[i][0]);
+            ptsY[i]     = prefs.getFloat("y" + i,     defStart[i][1]);
+            ptsX[i + 4] = prefs.getFloat("x" + (i+4), defEnd[i][0]);
+            ptsY[i + 4] = prefs.getFloat("y" + (i+4), defEnd[i][1]);
         }
     }
 
     private void savePoints() {
-        SharedPreferences.Editor e = sp.edit();
+        SharedPreferences.Editor e = prefs.edit();
         for (int i = 0; i < 8; i++) {
-            e.putFloat("x" + i, xf[i]);
-            e.putFloat("y" + i, yf[i]);
+            e.putFloat("x" + i, ptsX[i]);
+            e.putFloat("y" + i, ptsY[i]);
         }
         e.apply();
     }
 
-    public void setListener(OnPointSet l) { this.listener = l; }
-    public void startCalib(int which) { calibTarget = which; }
-    public void stopCalib() { calibTarget = -1; savePoints(); }
+    private void resetParticle(int i) {
+        pT[i] = -0.2f * rnd.nextFloat();
+        pOffX[i] = (rnd.nextFloat() - 0.5f) * 0.05f;
+        pOffY[i] = (rnd.nextFloat() - 0.5f) * 0.05f;
+        pSize[i] = 12 + rnd.nextFloat() * 24;
+        pSpeed[i] = 0.7f + rnd.nextFloat() * 0.6f;
+        pPhase[i] = rnd.nextFloat() * (float)Math.PI * 2f;
+        pFreq[i] = 0.5f + rnd.nextFloat() * 1.5f;
+    }
 
+    public void setListener(OnPointSet l) { listener = l; }
+    public void setFan(int v) { fan = v; }
+    public void setDirection(int d) { dir = d; }
+    public void setTemperature(double t) { temperature = t; }
+
+    public void startCalib(int index) { calibIndex = index; invalidate(); }
+    public void stopCalib() { calibIndex = -1; savePoints(); invalidate(); }
     public void resetPoints() {
-        xf = new float[]{0.38f, 0.38f, 0.38f, 0.38f, 0.47f, 0.61f, 0.42f, 0.47f};
-        yf = new float[]{0.42f, 0.42f, 0.42f, 0.42f, 0.27f, 0.34f, 0.72f, 0.72f};
-        savePoints();
-        rebuildPaths();
+        prefs.edit().clear().apply();
+        loadPoints();
         invalidate();
     }
 
-    public void setFan(int f) {
-        fanSpeed = Math.max(0, Math.min(5, f));
-        invalidate();
-    }
-
-    public void setTemperature(double temp) {
-        double t = Math.max(16, Math.min(30, temp));
-        int r, g, b;
-        if (t <= 23) {
-            double k = (t - 16) / 7.0;
-            r = (int)Math.round(74  + (220 - 74) * k);
-            g = (int)Math.round(158 + (235 - 158) * k);
-            b = 255;
-        } else {
-            double k = (t - 23) / 7.0;
-            r = (int)Math.round(220 + (255 - 220) * k);
-            g = (int)Math.round(235 + (90 - 235) * k);
-            b = (int)Math.round(255 + (90 - 255) * k);
-        }
-        fogColor = 0xFF000000 | (r << 16) | (g << 8) | b;
-        invalidate();
-    }
-
-    public void setDirection(int d) {
-        direction = d;
-        rebuildPaths();
-        invalidate();
-    }
-
-    @Override public boolean onTouchEvent(MotionEvent e) {
-        if (calibTarget < 0) return false;
-        if (e.getAction() == MotionEvent.ACTION_DOWN) {
-            float nx = e.getX() / getWidth();
-            float ny = e.getY() / getHeight();
-            if (nx < 0) nx = 0; if (nx > 1) nx = 1;
-            if (ny < 0) ny = 0; if (ny > 1) ny = 1;
-            xf[calibTarget] = nx;
-            yf[calibTarget] = ny;
-            if (listener != null) listener.onPointSet(calibTarget, nx, ny);
-            rebuildPaths();
+    @Override
+    public boolean onTouchEvent(MotionEvent ev) {
+        if (calibIndex < 0) return false;
+        if (ev.getAction() == MotionEvent.ACTION_DOWN) {
+            float xf = Math.max(0f, Math.min(1f, ev.getX() / getWidth()));
+            float yf = Math.max(0f, Math.min(1f, ev.getY() / getHeight()));
+            ptsX[calibIndex] = xf;
+            ptsY[calibIndex] = yf;
+            if (listener != null) listener.onPointSet(calibIndex, xf, yf);
             invalidate();
             return true;
         }
         return true;
     }
 
-    @Override protected void onSizeChanged(int w, int hh, int ow, int oh) {
-        super.onSizeChanged(w, hh, ow, oh);
-        rebuildPaths();
-    }
-
-    private void rebuildPaths() {
-        int w = getWidth(), hh = getHeight();
-        if (w == 0 || hh == 0) { measures = null; return; }
-
-        List<float[]> lines = new ArrayList<>();
-
-        switch (direction) {
-            case 0:
-                lines.add(new float[]{xf[0]*w, yf[0]*hh, xf[4]*w, yf[4]*hh});
-                break;
-            case 1:
-                lines.add(new float[]{xf[0]*w, yf[0]*hh, xf[4]*w, yf[4]*hh});
-                lines.add(new float[]{xf[2]*w, yf[2]*hh, xf[6]*w, yf[6]*hh});
-                break;
-            case 2:
-                lines.add(new float[]{xf[1]*w, yf[1]*hh, xf[5]*w, yf[5]*hh});
-                break;
-            case 3:
-                lines.add(new float[]{xf[2]*w, yf[2]*hh, xf[6]*w, yf[6]*hh});
-                break;
-            default:
-                lines.add(new float[]{xf[1]*w, yf[1]*hh, xf[5]*w, yf[5]*hh});
-        }
-
-        measures = new PathMeasure[lines.size()];
-        pathLengths = new float[lines.size()];
-        for (int i = 0; i < lines.size(); i++) {
-            android.graphics.Path p = new android.graphics.Path();
-            float[] l = lines.get(i);
-            p.moveTo(l[0], l[1]);
-            p.lineTo(l[2], l[3]);
-            measures[i] = new PathMeasure(p, false);
-            pathLengths[i] = measures[i].getLength();
-        }
-
-        particles.clear();
-        spawnInitial();
-    }
-
-    private void spawnInitial() {
-        if (measures == null) return;
-        for (int pi = 0; pi < measures.length; pi++) {
-            int count = 14 + fanSpeed * 5;
-            for (int i = 0; i < count; i++) {
-                Particle p = new Particle();
-                p.pathIndex = pi;
-                p.t = rng.nextFloat();
-                p.speed = 0.010f + rng.nextFloat() * 0.010f;
-                p.size = 4f + rng.nextFloat() * 5f;
-                p.wobbleSeed = rng.nextFloat() * 6.28f;
-                particles.add(p);
-            }
-        }
-    }
-
-    private void updateParticles() {
-        if (measures == null || fanSpeed == 0) return;
-        float mult = 0.5f + fanSpeed * 0.4f;
-        for (Particle p : particles) {
-            p.t += p.speed * mult;
-            if (p.t > 1f) {
-                p.t = 0f;
-                p.speed = 0.010f + rng.nextFloat() * 0.010f;
-                p.size = 4f + rng.nextFloat() * 5f;
-                p.wobbleSeed = rng.nextFloat() * 6.28f;
-                if (measures.length > 0) p.pathIndex = rng.nextInt(measures.length);
-            }
-        }
-    }
-
-    @Override protected void onDraw(Canvas canvas) {
+    @Override
+    protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        if (measures == null || measures.length == 0 || fanSpeed == 0) return;
+        int w = getWidth();
+        int h = getHeight();
+        if (w == 0 || h == 0) return;
 
-        paintBlob.setColorFilter(new PorterDuffColorFilter(fogColor, PorterDuff.Mode.SRC_IN));
-        paintParticle.setColor(fogColor);
+        bgPaint.setShader(new LinearGradient(
+            0, 0, 0, h,
+            Color.parseColor("#0A1520"),
+            Color.parseColor("#05080C"),
+            Shader.TileMode.CLAMP));
+        canvas.drawRect(0, 0, w, h, bgPaint);
+        bgPaint.setShader(null);
 
-        float pulse = 0.9f + 0.1f * (float) Math.sin(phase);
-        float[] pos = new float[2];
-        float[] tan = new float[2];
+        long now = System.nanoTime();
+        float dt = (now - lastNano) / 1_000_000_000f;
+        lastNano = now;
+        if (dt > 0.1f) dt = 0.1f;
+        if (dt < 0f) dt = 0.016f;
 
-        // ========== 1) Облако: широкие мягкие пуфы, разбросанные по пути ==========
-        for (int pi = 0; pi < measures.length; pi++) {
-            PathMeasure m = measures[pi];
-            float len = pathLengths[pi];
+        updateParticles(dt);
 
-            for (int i = 0; i < PUFFS_PER_PATH; i++) {
-                float t = i / (float)(PUFFS_PER_PATH - 1);
-                m.getPosTan(t * len, pos, tan);
+        if (fan > 0) drawStream(canvas, w, h);
+        if (calibIndex >= 0) drawCalibMarkers(canvas, w, h);
 
-                float nx = -tan[1], ny = tan[0];
-                float wobble = (float)Math.sin(phase * 1.5f + t * 5f + pi * 2.1f) * 8f;
-                float px = pos[0] + nx * wobble;
-                float py = pos[1] + ny * wobble;
+        postInvalidateOnAnimation();
+    }
 
-                // Большой радиус — чтобы пуфы перекрывались и давали облако
-                float radius = (35f + t * 45f) * (1f + fanSpeed * 0.10f);
+    private void updateParticles(float dt) {
+        if (fan <= 0) return;
+        float baseSpeed = 0.2f + fan * 0.2f;
+        for (int i = 0; i < N; i++) {
+            pT[i] += baseSpeed * pSpeed[i] * dt;
+            if (pT[i] > 1f) resetParticle(i);
+        }
+    }
 
-                // Альфа: пик у старта, плавно к нулю у конца
-                float a = (1f - t * 0.9f);
-                a *= (0.30f + 0.10f * fanSpeed) * pulse;
-                int alpha = (int)(a * 255);
-                if (alpha > 180) alpha = 180;
-                if (alpha < 0) alpha = 0;
-                paintBlob.setAlpha(alpha);
+    private void drawStream(Canvas canvas, int w, int h) {
+        int sIdx = START_IDX[dir];
+        int eIdx = END_IDX[dir];
 
-                float scale = radius * 2f / BLOB_SIZE;
-                matrix.reset();
-                matrix.postTranslate(-BLOB_SIZE / 2f, -BLOB_SIZE / 2f);
-                matrix.postScale(scale, scale);
-                matrix.postTranslate(px, py);
-                canvas.drawBitmap(softBlob, matrix, paintBlob);
+        float sx = ptsX[sIdx] * w;
+        float sy = ptsY[sIdx] * h;
+
+        int[] rgb = tempColor(temperature);
+        PorterDuffColorFilter cf = new PorterDuffColorFilter(
+            Color.rgb(rgb[0], rgb[1], rgb[2]), PorterDuff.Mode.SRC_IN);
+        particlePaint.setColorFilter(cf);
+
+        for (int i = 0; i < N; i++) {
+            float t = pT[i];
+            if (t < 0f) continue;
+
+            float ex, ey;
+            if (dir == 1) {
+                if (i % 2 == 0) { ex = ptsX[4] * w; ey = ptsY[4] * h; }
+                else            { ex = ptsX[6] * w; ey = ptsY[6] * h; }
+            } else {
+                ex = ptsX[eIdx] * w;
+                ey = ptsY[eIdx] * h;
             }
+
+            float bx = sx + (ex - sx) * t;
+            float by = sy + (ey - sy) * t;
+
+            float turb  = (float)Math.sin(t * pFreq[i] * 6f + pPhase[i]) * t * 0.025f * w;
+            float turb2 = (float)Math.cos(t * pFreq[i] * 4f + pPhase[i]) * t * 0.015f * h;
+
+            float px = bx + pOffX[i] * w + turb;
+            float py = by + pOffY[i] * h + turb2;
+
+            float scale = 0.5f + t * 1.8f;
+            float radius = pSize[i] * scale * (w / 400f);
+
+            float alpha = (float)Math.sin(t * Math.PI) * 0.08f * 255f;
+            if (alpha <= 0f) continue;
+            if (alpha > 255f) alpha = 255f;
+
+            float s = (radius * 2f) / 64f;
+            mtx.reset();
+            mtx.setScale(s, s);
+            mtx.postTranslate(px - radius, py - radius);
+
+            particlePaint.setAlpha((int)alpha);
+            canvas.drawBitmap(sprite, mtx, particlePaint);
         }
+        particlePaint.setColorFilter(null);
+    }
 
-        // ========== 2) Частицы поверх ==========
-        for (Particle p : particles) {
-            if (p.pathIndex >= measures.length) continue;
-            PathMeasure m = measures[p.pathIndex];
-            float dist = p.t * pathLengths[p.pathIndex];
-            m.getPosTan(dist, pos, tan);
-
-            float nx = -tan[1], ny = tan[0];
-            float wobble = (float)Math.sin(phase * 2.2f + p.wobbleSeed) * 10f;
-            float px = pos[0] + nx * wobble;
-            float py = pos[1] + ny * wobble;
-
-            float fadeIn  = Math.min(1f, p.t * 5f);
-            float fadeOut = Math.min(1f, (1f - p.t) * 4f);
-            int a = (int)(255 * fadeIn * fadeOut * (0.5f + fanSpeed * 0.1f));
-            if (a > 255) a = 255;
-            if (a < 0) a = 0;
-
-            paintParticle.setAlpha(a);
-            float size = p.size * (0.8f + fanSpeed * 0.06f) * pulse;
-            canvas.drawCircle(px, py, size, paintParticle);
+    private int[] tempColor(double t) {
+        if (t <= 22) {
+            float k = (float)((t - 16) / 6);
+            return new int[]{ (int)(60 + 90*k), (int)(140 + 80*k), 255 };
+        } else if (t <= 26) {
+            float k = (float)((t - 22) / 4);
+            return new int[]{ (int)(150 + 90*k), (int)(220 + 20*k), (int)(255 - 40*k) };
+        } else {
+            float k = (float)((t - 26) / 4);
+            return new int[]{ 240, (int)(240 - 180*k), (int)(215 - 180*k) };
         }
     }
 
-    @Override protected void onAttachedToWindow() {
-        super.onAttachedToWindow();
-        h.postDelayed(ticker, 33);
-    }
-
-    @Override protected void onDetachedFromWindow() {
-        h.removeCallbacks(ticker);
-        super.onDetachedFromWindow();
+    private void drawCalibMarkers(Canvas canvas, int w, int h) {
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        for (int i = 0; i < 8; i++) {
+            float x = ptsX[i] * w;
+            float y = ptsY[i] * h;
+            boolean active = (i == calibIndex);
+            p.setStyle(Paint.Style.STROKE);
+            p.setStrokeWidth(active ? 6 : 3);
+            p.setColor(active ? 0xFF5CE1E6 : 0x805CE1E6);
+            canvas.drawCircle(x, y, active ? 30 : 20, p);
+            p.setStyle(Paint.Style.FILL);
+            p.setColor(active ? 0xFFFFFFFF : 0xFF5CE1E6);
+            canvas.drawCircle(x, y, active ? 8 : 4, p);
+        }
     }
 }
