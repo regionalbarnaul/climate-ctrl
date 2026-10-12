@@ -114,8 +114,7 @@ public class MainActivity extends Activity {
         calibBtns = new Button[]{
             findViewById(R.id.cal0), findViewById(R.id.cal1),
             findViewById(R.id.cal2), findViewById(R.id.cal3),
-            findViewById(R.id.cal4), findViewById(R.id.cal5),
-            findViewById(R.id.cal6), findViewById(R.id.cal7)
+            findViewById(R.id.cal4), findViewById(R.id.cal5)
         };
         calReset = findViewById(R.id.calReset);
         calDone  = findViewById(R.id.calDone);
