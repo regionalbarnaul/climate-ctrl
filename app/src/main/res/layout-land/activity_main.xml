@@ -25,15 +25,22 @@
                 android:padding="10dp"
                 android:background="#131C2C">
 
-                <ImageView
-                    android:layout_width="160dp"
-                    android:layout_height="112dp"
+                <FrameLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:layout_marginBottom="4dp"
-                    android:src="@drawable/audi_logo"
-                    android:scaleType="fitCenter"
-                    android:adjustViewBounds="true"
-                    android:contentDescription="Audi"/>
+                    android:background="@drawable/audi_backdrop"
+                    android:padding="10dp">
+
+                    <ImageView
+                        android:layout_width="160dp"
+                        android:layout_height="112dp"
+                        android:src="@drawable/audi_logo"
+                        android:scaleType="fitCenter"
+                        android:adjustViewBounds="true"
+                        android:contentDescription="Audi"/>
+                </FrameLayout>
 
                 <TextView
                     android:id="@+id/tempValue"
