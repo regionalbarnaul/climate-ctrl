@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.graphics.drawable.GradientDrawable;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
@@ -57,6 +58,8 @@ public class MainActivity extends Activity {
     private int fan = 0;
     private int dir = 2;
 
+    private SharedPreferences statePrefs;
+
     private static final int COLOR_BG_BLOCK  = 0xFF131C2C;
     private static final int COLOR_BG_ACTIVE = 0xFF1A3A3D;
     private static final int COLOR_ACCENT    = 0xFF5CE1E6;
@@ -89,18 +92,23 @@ public class MainActivity extends Activity {
         }
     };
 
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        outState.putDouble("temp", temp);
-        outState.putInt("fan", fan);
-        outState.putInt("dir", dir);
+    private void saveState() {
+        statePrefs.edit()
+            .putFloat("temp", (float)temp)
+            .putInt("fan", fan)
+            .putInt("dir", dir)
+            .apply();
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        statePrefs = getSharedPreferences("climate_state", Context.MODE_PRIVATE);
+        temp = statePrefs.getFloat("temp", 20.0f);
+        fan  = statePrefs.getInt("fan", 0);
+        dir  = statePrefs.getInt("dir", 2);
 
         tempValue   = findViewById(R.id.tempValue);
         tempSlider  = findViewById(R.id.tempSlider);
@@ -145,12 +153,6 @@ public class MainActivity extends Activity {
             findViewById(R.id.seg4)
         };
 
-        if (savedInstanceState != null) {
-            temp = savedInstanceState.getDouble("temp", 20.0);
-            fan  = savedInstanceState.getInt("fan", 0);
-            dir  = savedInstanceState.getInt("dir", 2);
-        }
-
         for (int i = 0; i < dirButtons.length; i++) {
             dirButtons[i].setDirIndex(i);
             final int idx = i;
@@ -190,6 +192,7 @@ public class MainActivity extends Activity {
             }
             @Override public void onStartTrackingTouch(SeekBar sb) {}
             @Override public void onStopTrackingTouch(SeekBar sb) {
+                saveState();
                 int angle = (int)Math.round(((temp - 16) / 14) * 180);
                 usbSend("A" + angle);
             }
@@ -401,6 +404,7 @@ public class MainActivity extends Activity {
         dir = n;
         updateDirVisual();
         if (flowView != null) flowView.setDirection(dir);
+        saveState();
         usbSend(String.valueOf(dir + 1));
     }
 
@@ -414,6 +418,7 @@ public class MainActivity extends Activity {
         fan = Math.max(0, Math.min(5, fan + delta));
         renderFan();
         if (flowView != null) flowView.setFan(fan);
+        saveState();
         usbSend("V" + fan);
     }
 
